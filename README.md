@@ -51,9 +51,7 @@ The CLI sweep defaults to `models = [bear-1, bear-1.1, bear-1.2]` ×
 | **EM** (Exact Match) | "Did we get the answer span verbatim?" SQuAD-normalized: lowercase, strip punctuation + articles. | QA, conversational, long-context (as F1 fallback) |
 | **F1 token overlap** | "How much of the answer did we capture?" Standard SQuAD F1 over normalized tokens. | QA, conversational |
 | **ROUGE-L** | "Does the summary cover the same content as the reference?" Longest-common-subsequence based. | summarization |
-| **Faithfulness** | "Does the summary stay grounded in the **original** source even when the LLM only saw the compressed version?" The hallucination guard. NLI cross-encoder when `--use-embeddings` lexical noun-phrase fallback otherwise. | summarization |
-
-
+| **Faithfulness** | "Does the summary stay grounded in the **original** source even when the LLM only saw the compressed version?" The hallucination guard. NLI cross-encoder when `--use-embeddings`; lexical noun-phrase fallback otherwise. | summarization |
 | **Semantic similarity** | "How close is one passage to another in meaning?" Sentence-transformer cosine when `--use-embeddings`; TF-IDF cosine fallback. | RAG ranking |
 | **Retrieval accuracy** | "Did we rank the correct doc / recover the needle?" | RAG, long-context |
 | **MRR** | Reciprocal rank of the gold document. Soft signal when the relevant doc isn't #1. | RAG |

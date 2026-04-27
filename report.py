@@ -139,7 +139,7 @@ def _render_executive_summary(report: dict) -> str:
     delta = cell_score - baseline_score
 
     daily = 1_000_000
-    output_estimate = max(50, int(cell["avg_llm_output_tokens"] or 50))
+    output_estimate = int(cell.get("avg_llm_output_tokens") or 0)
     base_llm_cost = estimate_llm_cost_usd(int(baseline_input_tokens), output_estimate, "gpt-4o-mini") * daily
     cur_llm_cost = estimate_llm_cost_usd(
         int(cell["avg_llm_input_tokens"] or 0), output_estimate, "gpt-4o-mini"
@@ -369,15 +369,44 @@ def _render_ttc_safe_chart(report: dict) -> str:
     parts.append(f"<text x='{legend_x + 14}' y='{geom.pad_top + 34}' font-size='12' fill='#333'>unprotected</text>")
     parts.append("</svg>")
 
+    n_pairs_min = min((r.get("n_pairs", 0) for r in rows), default=0)
+    all_perfect = all(
+        abs(r.get("protected_f1", 0.0) - 1.0) < 1e-9
+        and abs(r.get("unprotected_f1", 0.0) - 1.0) < 1e-9
+        for r in rows
+    )
+    caveat_html = ""
+    if all_perfect:
+        caveat_html = (
+            "<p class='notes' style='color: #92400e; background: #fef3c7; "
+            "padding: 8px 12px; border-radius: 6px;'>"
+            f"<strong>Underpowered result.</strong> Every cell scored F1=1.0 on both "
+            f"protected and unprotected (n={n_pairs_min} pairs/cell). On this dataset, "
+            "compression at every tested aggressiveness preserved QA accuracy — but the "
+            "sample size is too small to confidently distinguish protected from "
+            "unprotected. <code>PROTECTED_SUBSET_FRACTION</code> in <code>eval/tasks/qa.py</code> "
+            "has been raised from 0.2 to 1.0; future runs will test all samples under "
+            "both conditions."
+            "</p>"
+        )
+    elif n_pairs_min < 5:
+        caveat_html = (
+            "<p class='notes' style='color: #92400e; background: #fef3c7; "
+            "padding: 8px 12px; border-radius: 6px;'>"
+            f"<strong>Small n caveat:</strong> only {n_pairs_min} protected/unprotected "
+            "pairs per cell. Treat differences as directional, not statistically conclusive."
+            "</p>"
+        )
+
     return f"""
 <section>
   <h2>&lt;ttc_safe&gt; impact — protected vs unprotected questions</h2>
   <p class='section-intro'>
-    For a 20% subset of QA samples we wrap the question in <code>&lt;ttc_safe&gt;</code> tags and
-    prepend it to the context. The compressor leaves protected regions untouched — does this
-    visibly preserve accuracy as aggressiveness rises?
+    For a configurable subset of QA samples we wrap the question in <code>&lt;ttc_safe&gt;</code>
+    tags and prepend it to the context. The compressor leaves protected regions untouched — does
+    this visibly preserve accuracy as aggressiveness rises?
   </p>
-  <div class='card'>{"".join(parts)}</div>
+  <div class='card'>{"".join(parts)}{caveat_html}</div>
 </section>
 """
 
@@ -433,9 +462,20 @@ def _render_compression_ratio_box(report: dict) -> str:
     return "\n".join(parts)
 
 def _render_latency_section(report: dict) -> str:
-    parts = ["<section><h2>Latency analysis</h2>",
-             "<p class='section-intro'>p50/p95/p99 across the sweep. "
-             "E2E (compressed) = TTC compress + LLM call. E2E (baseline) = LLM call alone.</p>"]
+    parts = [
+        "<section><h2>Latency analysis</h2>",
+        "<p class='section-intro'>p50/p95/p99 across the sweep. "
+        "E2E (compressed) = TTC compress + LLM call. E2E (baseline) = LLM call alone.</p>",
+        "<p class='notes' style='background: #fef3c7; color: #78350f; "
+        "padding: 8px 12px; border-radius: 6px;'>"
+        "<strong>Read these numbers carefully.</strong> E2E p95 includes (a) occasional "
+        "429-retry tail latency where TTC's 60 req/min server limit pushed individual calls "
+        "into a backoff window, and (b) client-side rate-limit pacing introduced by "
+        "<code>--ttc-rpm</code> (default 50/min). The steady-state per-call TTC compress "
+        "latency is the <strong>TTC p50</strong> column — that's the number to compare against "
+        "TTC's published benchmarks. E2E p95 is the realistic number under our free-tier quota."
+        "</p>",
+    ]
     for task in report.get("tasks", []):
         cells = task.get("sweep_results", [])
         if not cells:
@@ -490,7 +530,7 @@ def _render_cost_section(report: dict) -> str:
         if not cells:
             continue
         baseline_in = task["baseline_avg_llm_input_tokens"]
-        out_estimate = max(50, int(task["baseline_avg_llm_output_tokens"] or 50))
+        out_estimate = int(task.get("baseline_avg_llm_output_tokens") or 0)
 
         rows = []
         for cell in cells:

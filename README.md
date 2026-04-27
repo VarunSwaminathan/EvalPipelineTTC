@@ -5,6 +5,20 @@ An evaluation pipeline for The Token Company's input-compression API (`bear-1`, 
 in a 268K-vote blind A/B): treat the eval as a measurement instrument for
 when compression *helps* and when it *hurts*, not as a hatchet job.
 
+## Sample run
+
+A real run on **OpenAI gpt-4o-mini** (5 tasks, n=6–15 per task, 27-min wall
+clock, 0 failures) is committed at
+[`results/sample_run.html`](results/sample_run.html) — open it locally to see
+actual numbers without re-running the eval. Headlines from that run:
+
+| Task | Sweet spot | Accuracy delta vs baseline | Compression |
+| --- | --- | --- | --- |
+| QA | `bear-1.2` @ 0.9 | F1 0.867 → 0.956 (**+8.9pp**) | 35.7% |
+| Summarization | `bear-1.1` @ 0.9 | ROUGE +1.8pp | 33.5% |
+| RAG | `bear-1.2` @ 0.9 | retrieval 1.00 → 1.00 (flat) | 35.8% |
+| Long context | `bear-1.2` @ 0.9 | retrieval 1.00 → 1.00 (flat) | **56.2%** |
+
 ## Quick start
 
 ```bash

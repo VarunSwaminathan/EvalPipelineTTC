@@ -1,0 +1,3196 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'/>
+<title>TTC Eval — 20260426T232228Z</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a1a;
+    background: #fafafa;
+    margin: 0;
+    padding: 32px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+h1 { font-size: 28px; margin-bottom: 4px; }
+h2 { font-size: 22px; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+h3 { font-size: 16px; margin-top: 24px; color: #333; }
+.subtitle { color: #666; margin-top: 0; }
+.card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 12px 0;
+}
+.headline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+.headline .stat {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #2563eb;
+    border-radius: 6px;
+    padding: 16px;
+}
+.headline .stat .label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.headline .stat .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+.headline .stat.positive { border-left-color: #16a34a; }
+.headline .stat.warning { border-left-color: #f59e0b; }
+.headline .stat.negative { border-left-color: #dc2626; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border: 1px solid #e0e0e0; padding: 6px 10px; text-align: left; }
+th { background: #f4f4f4; font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.delta-pos { color: #16a34a; font-weight: 600; }
+.delta-neg { color: #dc2626; font-weight: 600; }
+.delta-zero { color: #777; }
+.pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; background: #e0e7ff; color: #1e3a8a;
+}
+.pill.green { background: #dcfce7; color: #14532d; }
+.pill.red { background: #fee2e2; color: #7f1d1d; }
+.pill.amber { background: #fef3c7; color: #78350f; }
+.notes { color: #555; font-size: 13px; }
+.muted { color: #888; }
+.section-intro { color: #444; font-size: 14px; margin-bottom: 12px; }
+svg { background: white; border: 1px solid #e0e0e0; border-radius: 6px; }
+.legend { font-size: 12px; }
+.legend .swatch { display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin-right: 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<h1>TTC compression eval report</h1>
+<p class='subtitle'>
+  bear-1.x compression vs baseline across 5 tasks.
+  Backend: <code>openai</code>
+  (gpt-4o-mini).
+</p>
+
+<section>
+  <h2>Executive summary — sweet-spot impact</h2>
+  <p class='section-intro'>
+    Headline numbers from the recommended <code>(model, aggressiveness)</code> setting on
+    task <strong>long_context</strong>. Net cost projected at 1M requests/day on gpt-4o-mini.
+  </p>
+  <div class='headline'>
+    <div class='stat positive'>
+      <div class='label'>Net daily savings @ 1M req</div>
+      <div class='value'>$56.31</div>
+    </div>
+    <div class='stat positive'>
+      <div class='label'>Avg compression at sweet spot</div>
+      <div class='value'>56.2%</div>
+    </div>
+    <div class='stat positive'>
+      <div class='label'>Accuracy Δ vs baseline (retrieval_accuracy)</div>
+      <div class='value'>+0.00pp</div>
+    </div>
+    <div class='stat positive'>
+      <div class='label'>p95 E2E latency vs baseline</div>
+      <div class='value'>-17.6%</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Sweet-spot recommendation</h2>
+  <div class='card'>
+    <p>
+      Across the sweep, the highest combined utility is <strong>bear-1.2</strong>
+      at aggressiveness <strong>0.90</strong> on the
+      <strong>long_context</strong> task.
+    </p>
+    <p class='notes'>
+      Selection rule: <code>utility = (accuracy_delta_vs_baseline) + λ × compression_ratio</code> with
+      λ = 0.5. Cells whose accuracy delta is below −2pp are excluded — we never recommend a setting
+      that visibly hurts the customer's task. See <code>eval/tasks/_common.py:select_best_cell</code>.
+    </p>
+  </div>
+</section>
+<section><h2>Accuracy vs aggressiveness</h2>
+<p class='section-intro'>One chart per task. One line per model. Shaded bands = bootstrap 95% CI. Dashed line = uncompressed baseline.</p>
+
+<div class='card'>
+  <h3>qa — f1</h3>
+  <p class='notes'>Extractive QA on noisy contexts (finance + general). Scores: EM, F1.</p>
+  <svg width='720' height='320' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='256' fill='white' stroke='#ccc'/><line x1='60' y1='276.0' x2='560' y2='276.0' stroke='#eee'/><text x='54' y='280.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='215.04761904761904' x2='560' y2='215.04761904761904' stroke='#eee'/><text x='54' y='219.04761904761904' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='154.0952380952381' x2='560' y2='154.0952380952381' stroke='#eee'/><text x='54' y='158.0952380952381' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='93.14285714285714' x2='560' y2='93.14285714285714' stroke='#eee'/><text x='54' y='97.14285714285714' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='32.190476190476204' x2='560' y2='32.190476190476204' stroke='#eee'/><text x='54' y='36.190476190476204' text-anchor='end' font-size='11' fill='#666'>1.00</text><line x1='60.0' y1='276' x2='60.0' y2='280' stroke='#666'/><text x='60.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.10</text><line x1='185.0' y1='276' x2='185.0' y2='280' stroke='#666'/><text x='185.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.30</text><line x1='310.0' y1='276' x2='310.0' y2='280' stroke='#666'/><text x='310.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.50</text><line x1='434.99999999999994' y1='276' x2='434.99999999999994' y2='280' stroke='#666'/><text x='434.99999999999994' y='294' text-anchor='middle' font-size='11' fill='#666'>0.70</text><line x1='560.0' y1='276' x2='560.0' y2='280' stroke='#666'/><text x='560.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.90</text><line x1='60' y1='64.69841269841271' x2='560' y2='64.69841269841271' stroke='#999' stroke-dasharray='4 3'/><text x='566' y='68.69841269841271' font-size='11' fill='#666'>baseline 0.87</text><polygon points='60.0,37.6 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,59.3 435.0,59.3 310.0,59.3 185.0,97.2 60.0,90.4' fill='#2563eb' fill-opacity='0.12' stroke='none'/><polyline points='60.0,60.6 185.0,59.3 310.0,43.0 435.0,43.0 560.0,43.0' fill='none' stroke='#2563eb' stroke-width='2'/><circle cx='60.0' cy='60.6' r='3' fill='#2563eb'/><circle cx='185.0' cy='59.3' r='3' fill='#2563eb'/><circle cx='310.0' cy='43.0' r='3' fill='#2563eb'/><circle cx='435.0' cy='43.0' r='3' fill='#2563eb'/><circle cx='560.0' cy='43.0' r='3' fill='#2563eb'/><polygon points='60.0,37.6 185.0,37.6 310.0,37.6 435.0,37.6 560.0,37.6 560.0,113.5 435.0,113.5 310.0,81.0 185.0,88.7 60.0,90.4' fill='#16a34a' fill-opacity='0.12' stroke='none'/><polyline points='60.0,60.6 185.0,60.1 310.0,53.9 435.0,70.1 560.0,70.1' fill='none' stroke='#16a34a' stroke-width='2'/><circle cx='60.0' cy='60.6' r='3' fill='#16a34a'/><circle cx='185.0' cy='60.1' r='3' fill='#16a34a'/><circle cx='310.0' cy='53.9' r='3' fill='#16a34a'/><circle cx='435.0' cy='70.1' r='3' fill='#16a34a'/><circle cx='560.0' cy='70.1' r='3' fill='#16a34a'/><polygon points='60.0,37.6 185.0,37.6 310.0,32.2 435.0,32.2 560.0,32.2 560.0,59.3 435.0,59.3 310.0,59.3 185.0,83.3 60.0,88.7' fill='#dc2626' fill-opacity='0.12' stroke='none'/><polyline points='60.0,60.1 185.0,54.6 310.0,43.0 435.0,43.0 560.0,43.0' fill='none' stroke='#dc2626' stroke-width='2'/><circle cx='60.0' cy='60.1' r='3' fill='#dc2626'/><circle cx='185.0' cy='54.6' r='3' fill='#dc2626'/><circle cx='310.0' cy='43.0' r='3' fill='#dc2626'/><circle cx='435.0' cy='43.0' r='3' fill='#dc2626'/><circle cx='560.0' cy='43.0' r='3' fill='#dc2626'/><rect x='568' y='25' width='10' height='10' fill='#2563eb'/><text x='582' y='34' font-size='12' fill='#333'>bear-1</text><rect x='568' y='43' width='10' height='10' fill='#16a34a'/><text x='582' y='52' font-size='12' fill='#333'>bear-1.1</text><rect x='568' y='61' width='10' height='10' fill='#dc2626'/><text x='582' y='70' font-size='12' fill='#333'>bear-1.2</text><text x='310.0' y='314' text-anchor='middle' font-size='12' fill='#333'>aggressiveness</text><text x='14' y='148.0' transform='rotate(-90 14 148.0)' text-anchor='middle' font-size='12' fill='#333'>f1 (mean)</text></svg>
+</div>
+
+
+<div class='card'>
+  <h3>summarization — rouge_l</h3>
+  <p class='notes'>Abstractive summarization. Scores: ROUGE-L vs reference and faithfulness vs the *original* document.</p>
+  <svg width='720' height='320' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='256' fill='white' stroke='#ccc'/><line x1='60' y1='276.0' x2='560' y2='276.0' stroke='#eee'/><text x='54' y='280.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='212.0' x2='560' y2='212.0' stroke='#eee'/><text x='54' y='216.0' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='148.0' x2='560' y2='148.0' stroke='#eee'/><text x='54' y='152.0' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='84.0' x2='560' y2='84.0' stroke='#eee'/><text x='54' y='88.0' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='20.0' x2='560' y2='20.0' stroke='#eee'/><text x='54' y='24.0' text-anchor='end' font-size='11' fill='#666'>1.00</text><line x1='60.0' y1='276' x2='60.0' y2='280' stroke='#666'/><text x='60.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.10</text><line x1='185.0' y1='276' x2='185.0' y2='280' stroke='#666'/><text x='185.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.30</text><line x1='310.0' y1='276' x2='310.0' y2='280' stroke='#666'/><text x='310.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.50</text><line x1='434.99999999999994' y1='276' x2='434.99999999999994' y2='280' stroke='#666'/><text x='434.99999999999994' y='294' text-anchor='middle' font-size='11' fill='#666'>0.70</text><line x1='560.0' y1='276' x2='560.0' y2='280' stroke='#666'/><text x='560.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.90</text><line x1='60' y1='195.92166847853798' x2='560' y2='195.92166847853798' stroke='#999' stroke-dasharray='4 3'/><text x='566' y='199.92166847853798' font-size='11' fill='#666'>baseline 0.31</text><polygon points='60.0,185.6 185.0,183.0 310.0,184.6 435.0,186.4 560.0,182.2 560.0,205.1 435.0,200.7 310.0,202.8 185.0,205.7 60.0,204.1' fill='#2563eb' fill-opacity='0.12' stroke='none'/><polyline points='60.0,195.0 185.0,194.8 310.0,194.0 435.0,193.6 560.0,194.2' fill='none' stroke='#2563eb' stroke-width='2'/><circle cx='60.0' cy='195.0' r='3' fill='#2563eb'/><circle cx='185.0' cy='194.8' r='3' fill='#2563eb'/><circle cx='310.0' cy='194.0' r='3' fill='#2563eb'/><circle cx='435.0' cy='193.6' r='3' fill='#2563eb'/><circle cx='560.0' cy='194.2' r='3' fill='#2563eb'/><polygon points='60.0,182.2 185.0,183.8 310.0,185.6 435.0,184.8 560.0,183.4 560.0,199.1 435.0,198.1 310.0,200.9 185.0,202.8 60.0,206.4' fill='#16a34a' fill-opacity='0.12' stroke='none'/><polyline points='60.0,195.1 185.0,193.7 310.0,193.7 435.0,191.2 560.0,191.3' fill='none' stroke='#16a34a' stroke-width='2'/><circle cx='60.0' cy='195.1' r='3' fill='#16a34a'/><circle cx='185.0' cy='193.7' r='3' fill='#16a34a'/><circle cx='310.0' cy='193.7' r='3' fill='#16a34a'/><circle cx='435.0' cy='191.2' r='3' fill='#16a34a'/><circle cx='560.0' cy='191.3' r='3' fill='#16a34a'/><polygon points='60.0,187.4 185.0,188.3 310.0,189.2 435.0,189.5 560.0,188.8 560.0,203.9 435.0,206.0 310.0,205.6 185.0,205.5 60.0,207.2' fill='#dc2626' fill-opacity='0.12' stroke='none'/><polyline points='60.0,197.8 185.0,197.0 310.0,197.9 435.0,197.9 560.0,196.4' fill='none' stroke='#dc2626' stroke-width='2'/><circle cx='60.0' cy='197.8' r='3' fill='#dc2626'/><circle cx='185.0' cy='197.0' r='3' fill='#dc2626'/><circle cx='310.0' cy='197.9' r='3' fill='#dc2626'/><circle cx='435.0' cy='197.9' r='3' fill='#dc2626'/><circle cx='560.0' cy='196.4' r='3' fill='#dc2626'/><rect x='568' y='25' width='10' height='10' fill='#2563eb'/><text x='582' y='34' font-size='12' fill='#333'>bear-1</text><rect x='568' y='43' width='10' height='10' fill='#16a34a'/><text x='582' y='52' font-size='12' fill='#333'>bear-1.1</text><rect x='568' y='61' width='10' height='10' fill='#dc2626'/><text x='582' y='70' font-size='12' fill='#333'>bear-1.2</text><text x='310.0' y='314' text-anchor='middle' font-size='12' fill='#333'>aggressiveness</text><text x='14' y='148.0' transform='rotate(-90 14 148.0)' text-anchor='middle' font-size='12' fill='#333'>rouge_l (mean)</text></svg>
+</div>
+
+
+<div class='card'>
+  <h3>rag — retrieval_accuracy</h3>
+  <p class='notes'>RAG retrieval ranking — does the relevant doc still rank #1 after compression? Scores: retrieval_accuracy, MRR.</p>
+  <svg width='720' height='320' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='256' fill='white' stroke='#ccc'/><line x1='60' y1='276.0' x2='560' y2='276.0' stroke='#eee'/><text x='54' y='280.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='215.04761904761904' x2='560' y2='215.04761904761904' stroke='#eee'/><text x='54' y='219.04761904761904' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='154.0952380952381' x2='560' y2='154.0952380952381' stroke='#eee'/><text x='54' y='158.0952380952381' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='93.14285714285714' x2='560' y2='93.14285714285714' stroke='#eee'/><text x='54' y='97.14285714285714' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='32.190476190476204' x2='560' y2='32.190476190476204' stroke='#eee'/><text x='54' y='36.190476190476204' text-anchor='end' font-size='11' fill='#666'>1.00</text><line x1='60.0' y1='276' x2='60.0' y2='280' stroke='#666'/><text x='60.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.10</text><line x1='185.0' y1='276' x2='185.0' y2='280' stroke='#666'/><text x='185.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.30</text><line x1='310.0' y1='276' x2='310.0' y2='280' stroke='#666'/><text x='310.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.50</text><line x1='434.99999999999994' y1='276' x2='434.99999999999994' y2='280' stroke='#666'/><text x='434.99999999999994' y='294' text-anchor='middle' font-size='11' fill='#666'>0.70</text><line x1='560.0' y1='276' x2='560.0' y2='280' stroke='#666'/><text x='560.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.90</text><line x1='60' y1='32.190476190476204' x2='560' y2='32.190476190476204' stroke='#999' stroke-dasharray='4 3'/><text x='566' y='36.190476190476204' font-size='11' fill='#666'>baseline 1.00</text><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#2563eb' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#2563eb' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='185.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='310.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='435.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='560.0' cy='32.2' r='3' fill='#2563eb'/><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#16a34a' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#16a34a' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='185.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='310.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='435.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='560.0' cy='32.2' r='3' fill='#16a34a'/><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#dc2626' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#dc2626' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='185.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='310.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='435.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='560.0' cy='32.2' r='3' fill='#dc2626'/><rect x='568' y='25' width='10' height='10' fill='#2563eb'/><text x='582' y='34' font-size='12' fill='#333'>bear-1</text><rect x='568' y='43' width='10' height='10' fill='#16a34a'/><text x='582' y='52' font-size='12' fill='#333'>bear-1.1</text><rect x='568' y='61' width='10' height='10' fill='#dc2626'/><text x='582' y='70' font-size='12' fill='#333'>bear-1.2</text><text x='310.0' y='314' text-anchor='middle' font-size='12' fill='#333'>aggressiveness</text><text x='14' y='148.0' transform='rotate(-90 14 148.0)' text-anchor='middle' font-size='12' fill='#333'>retrieval_accuracy (mean)</text></svg>
+</div>
+
+
+<div class='card'>
+  <h3>conversational — f1</h3>
+  <p class='notes'>Multi-turn conversational QA. Compresses the passage once, then answers a sequence of dependent questions. Reports per-turn-position accuracy to surface degradation deeper in the dialogue.</p>
+  <svg width='720' height='320' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='256' fill='white' stroke='#ccc'/><line x1='60' y1='276.0' x2='560' y2='276.0' stroke='#eee'/><text x='54' y='280.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='213.97638733992233' x2='560' y2='213.97638733992233' stroke='#eee'/><text x='54' y='217.97638733992233' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='151.95277467984465' x2='560' y2='151.95277467984465' stroke='#eee'/><text x='54' y='155.95277467984465' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='89.92916201976695' x2='560' y2='89.92916201976695' stroke='#eee'/><text x='54' y='93.92916201976695' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='27.905549359689275' x2='560' y2='27.905549359689275' stroke='#eee'/><text x='54' y='31.905549359689275' text-anchor='end' font-size='11' fill='#666'>1.00</text><line x1='60.0' y1='276' x2='60.0' y2='280' stroke='#666'/><text x='60.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.10</text><line x1='185.0' y1='276' x2='185.0' y2='280' stroke='#666'/><text x='185.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.30</text><line x1='310.0' y1='276' x2='310.0' y2='280' stroke='#666'/><text x='310.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.50</text><line x1='434.99999999999994' y1='276' x2='434.99999999999994' y2='280' stroke='#666'/><text x='434.99999999999994' y='294' text-anchor='middle' font-size='11' fill='#666'>0.70</text><line x1='560.0' y1='276' x2='560.0' y2='280' stroke='#666'/><text x='560.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.90</text><line x1='60' y1='36.14612766126055' x2='560' y2='36.14612766126055' stroke='#999' stroke-dasharray='4 3'/><text x='566' y='40.14612766126055' font-size='11' fill='#666'>baseline 0.97</text><polygon points='60.0,34.4 185.0,33.3 310.0,41.2 435.0,56.9 560.0,56.9 560.0,93.2 435.0,93.2 310.0,87.6 185.0,65.8 60.0,62.2' fill='#2563eb' fill-opacity='0.12' stroke='none'/><polyline points='60.0,47.6 185.0,47.8 310.0,63.8 435.0,73.7 560.0,73.7' fill='none' stroke='#2563eb' stroke-width='2'/><circle cx='60.0' cy='47.6' r='3' fill='#2563eb'/><circle cx='185.0' cy='47.8' r='3' fill='#2563eb'/><circle cx='310.0' cy='63.8' r='3' fill='#2563eb'/><circle cx='435.0' cy='73.7' r='3' fill='#2563eb'/><circle cx='560.0' cy='73.7' r='3' fill='#2563eb'/><polygon points='60.0,32.4 185.0,38.9 310.0,54.3 435.0,62.3 560.0,62.5 560.0,86.1 435.0,83.6 310.0,82.1 185.0,75.8 60.0,52.3' fill='#16a34a' fill-opacity='0.12' stroke='none'/><polyline points='60.0,40.5 185.0,55.6 310.0,66.7 435.0,71.3 560.0,73.8' fill='none' stroke='#16a34a' stroke-width='2'/><circle cx='60.0' cy='40.5' r='3' fill='#16a34a'/><circle cx='185.0' cy='55.6' r='3' fill='#16a34a'/><circle cx='310.0' cy='66.7' r='3' fill='#16a34a'/><circle cx='435.0' cy='71.3' r='3' fill='#16a34a'/><circle cx='560.0' cy='73.8' r='3' fill='#16a34a'/><polygon points='60.0,38.2 185.0,44.5 310.0,54.3 435.0,61.5 560.0,61.5 560.0,86.4 435.0,85.1 310.0,82.1 185.0,65.2 60.0,63.1' fill='#dc2626' fill-opacity='0.12' stroke='none'/><polyline points='60.0,50.0 185.0,54.7 310.0,66.7 435.0,72.3 560.0,73.9' fill='none' stroke='#dc2626' stroke-width='2'/><circle cx='60.0' cy='50.0' r='3' fill='#dc2626'/><circle cx='185.0' cy='54.7' r='3' fill='#dc2626'/><circle cx='310.0' cy='66.7' r='3' fill='#dc2626'/><circle cx='435.0' cy='72.3' r='3' fill='#dc2626'/><circle cx='560.0' cy='73.9' r='3' fill='#dc2626'/><rect x='568' y='25' width='10' height='10' fill='#2563eb'/><text x='582' y='34' font-size='12' fill='#333'>bear-1</text><rect x='568' y='43' width='10' height='10' fill='#16a34a'/><text x='582' y='52' font-size='12' fill='#333'>bear-1.1</text><rect x='568' y='61' width='10' height='10' fill='#dc2626'/><text x='582' y='70' font-size='12' fill='#333'>bear-1.2</text><text x='310.0' y='314' text-anchor='middle' font-size='12' fill='#333'>aggressiveness</text><text x='14' y='148.0' transform='rotate(-90 14 148.0)' text-anchor='middle' font-size='12' fill='#333'>f1 (mean)</text></svg>
+</div>
+
+
+<div class='card'>
+  <h3>long_context — retrieval_accuracy</h3>
+  <p class='notes'>Long-context needle-in-haystack. Heatmap of retrieval accuracy across needle position × aggressiveness — the headline chart.</p>
+  <svg width='720' height='320' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='256' fill='white' stroke='#ccc'/><line x1='60' y1='276.0' x2='560' y2='276.0' stroke='#eee'/><text x='54' y='280.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='215.04761904761904' x2='560' y2='215.04761904761904' stroke='#eee'/><text x='54' y='219.04761904761904' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='154.0952380952381' x2='560' y2='154.0952380952381' stroke='#eee'/><text x='54' y='158.0952380952381' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='93.14285714285714' x2='560' y2='93.14285714285714' stroke='#eee'/><text x='54' y='97.14285714285714' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='32.190476190476204' x2='560' y2='32.190476190476204' stroke='#eee'/><text x='54' y='36.190476190476204' text-anchor='end' font-size='11' fill='#666'>1.00</text><line x1='60.0' y1='276' x2='60.0' y2='280' stroke='#666'/><text x='60.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.10</text><line x1='185.0' y1='276' x2='185.0' y2='280' stroke='#666'/><text x='185.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.30</text><line x1='310.0' y1='276' x2='310.0' y2='280' stroke='#666'/><text x='310.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.50</text><line x1='434.99999999999994' y1='276' x2='434.99999999999994' y2='280' stroke='#666'/><text x='434.99999999999994' y='294' text-anchor='middle' font-size='11' fill='#666'>0.70</text><line x1='560.0' y1='276' x2='560.0' y2='280' stroke='#666'/><text x='560.0' y='294' text-anchor='middle' font-size='11' fill='#666'>0.90</text><line x1='60' y1='32.190476190476204' x2='560' y2='32.190476190476204' stroke='#999' stroke-dasharray='4 3'/><text x='566' y='36.190476190476204' font-size='11' fill='#666'>baseline 1.00</text><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#2563eb' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#2563eb' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='185.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='310.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='435.0' cy='32.2' r='3' fill='#2563eb'/><circle cx='560.0' cy='32.2' r='3' fill='#2563eb'/><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#16a34a' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#16a34a' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='185.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='310.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='435.0' cy='32.2' r='3' fill='#16a34a'/><circle cx='560.0' cy='32.2' r='3' fill='#16a34a'/><polygon points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2 560.0,32.2 435.0,32.2 310.0,32.2 185.0,32.2 60.0,32.2' fill='#dc2626' fill-opacity='0.12' stroke='none'/><polyline points='60.0,32.2 185.0,32.2 310.0,32.2 435.0,32.2 560.0,32.2' fill='none' stroke='#dc2626' stroke-width='2'/><circle cx='60.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='185.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='310.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='435.0' cy='32.2' r='3' fill='#dc2626'/><circle cx='560.0' cy='32.2' r='3' fill='#dc2626'/><rect x='568' y='25' width='10' height='10' fill='#2563eb'/><text x='582' y='34' font-size='12' fill='#333'>bear-1</text><rect x='568' y='43' width='10' height='10' fill='#16a34a'/><text x='582' y='52' font-size='12' fill='#333'>bear-1.1</text><rect x='568' y='61' width='10' height='10' fill='#dc2626'/><text x='582' y='70' font-size='12' fill='#333'>bear-1.2</text><text x='310.0' y='314' text-anchor='middle' font-size='12' fill='#333'>aggressiveness</text><text x='14' y='148.0' transform='rotate(-90 14 148.0)' text-anchor='middle' font-size='12' fill='#333'>retrieval_accuracy (mean)</text></svg>
+</div>
+
+</section>
+<section>
+  <h2>&lt;ttc_safe&gt; impact — protected vs unprotected questions</h2>
+  <p class='section-intro'>
+    For a configurable subset of QA samples we wrap the question in <code>&lt;ttc_safe&gt;</code>
+    tags and prepend it to the context. The compressor leaves protected regions untouched — does
+    this visibly preserve accuracy as aggressiveness rises?
+  </p>
+  <div class='card'><svg width='720' height='300' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='500' height='200' fill='white' stroke='#ccc'/><line x1='60' y1='220.0' x2='560' y2='220.0' stroke='#eee'/><text x='54' y='224.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><line x1='60' y1='170.0' x2='560' y2='170.0' stroke='#eee'/><text x='54' y='174.0' text-anchor='end' font-size='11' fill='#666'>0.25</text><line x1='60' y1='120.0' x2='560' y2='120.0' stroke='#eee'/><text x='54' y='124.0' text-anchor='end' font-size='11' fill='#666'>0.50</text><line x1='60' y1='70.0' x2='560' y2='70.0' stroke='#eee'/><text x='54' y='74.0' text-anchor='end' font-size='11' fill='#666'>0.75</text><line x1='60' y1='20.0' x2='560' y2='20.0' stroke='#eee'/><text x='54' y='24.0' text-anchor='end' font-size='11' fill='#666'>1.00</text><rect x='63.0' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='78.7' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='76.7' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 76.7 234.0)'>bear-1@0.10</text><rect x='96.3' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='112.0' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='110.0' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 110.0 234.0)'>bear-1@0.30</text><rect x='129.7' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='145.3' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='143.3' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 143.3 234.0)'>bear-1@0.50</text><rect x='163.0' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='178.7' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='176.7' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 176.7 234.0)'>bear-1@0.70</text><rect x='196.3' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='212.0' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='210.0' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 210.0 234.0)'>bear-1@0.90</text><rect x='229.7' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='245.3' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='243.3' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 243.3 234.0)'>bear-1.1@0.10</text><rect x='263.0' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='278.7' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='276.7' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 276.7 234.0)'>bear-1.1@0.30</text><rect x='296.3' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='312.0' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='310.0' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 310.0 234.0)'>bear-1.1@0.50</text><rect x='329.7' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='345.3' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='343.3' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 343.3 234.0)'>bear-1.1@0.70</text><rect x='363.0' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='378.7' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='376.7' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 376.7 234.0)'>bear-1.1@0.90</text><rect x='396.3' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='412.0' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='410.0' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 410.0 234.0)'>bear-1.2@0.10</text><rect x='429.7' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='445.3' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='443.3' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 443.3 234.0)'>bear-1.2@0.30</text><rect x='463.0' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='478.7' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='476.7' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 476.7 234.0)'>bear-1.2@0.50</text><rect x='496.3' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='512.0' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='510.0' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 510.0 234.0)'>bear-1.2@0.70</text><rect x='529.7' y='20.0' width='11.7' height='200.0' fill='#16a34a'/><rect x='545.3' y='20.0' width='11.7' height='200.0' fill='#9ca3af'/><text x='543.3' y='234.0' text-anchor='middle' font-size='10' fill='#444' transform='rotate(-25 543.3 234.0)'>bear-1.2@0.90</text><rect x='572' y='25' width='10' height='10' fill='#16a34a'/><text x='586' y='34' font-size='12' fill='#333'>protected (&lt;ttc_safe&gt;)</text><rect x='572' y='45' width='10' height='10' fill='#9ca3af'/><text x='586' y='54' font-size='12' fill='#333'>unprotected</text></svg><p class='notes' style='color: #92400e; background: #fef3c7; padding: 8px 12px; border-radius: 6px;'><strong>Underpowered result.</strong> Every cell scored F1=1.0 on both protected and unprotected (n=3 pairs/cell). On this dataset, compression at every tested aggressiveness preserved QA accuracy — but the sample size is too small to confidently distinguish protected from unprotected. <code>PROTECTED_SUBSET_FRACTION</code> in <code>eval/tasks/qa.py</code> has been raised from 0.2 to 1.0; future runs will test all samples under both conditions.</p></div>
+</section>
+<section><h2>Compression ratio distribution</h2>
+<p class='section-intro'>How aggressively each model compresses, per task. Bar = mean, whiskers = min/max across (sample × aggressiveness) for that model.</p>
+
+        <div class='card'>
+          <h3>qa</h3>
+          <table>
+            <thead><tr><th>model</th><th class='num'>min</th><th class='num'>q1</th><th class='num'>median</th><th class='num'>q3</th><th class='num'>max</th><th class='num'>mean</th></tr></thead>
+            <tbody>
+                <tr>
+                  <td>bear-1</td>
+                  <td class='num'>8.82%</td>
+                  <td class='num'>20.90%</td>
+                  <td class='num'>26.83%</td>
+                  <td class='num'>32.87%</td>
+                  <td class='num'>44.96%</td>
+                  <td class='num'>26.94%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.1</td>
+                  <td class='num'>10.29%</td>
+                  <td class='num'>21.01%</td>
+                  <td class='num'>26.47%</td>
+                  <td class='num'>36.43%</td>
+                  <td class='num'>48.06%</td>
+                  <td class='num'>28.37%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.2</td>
+                  <td class='num'>11.76%</td>
+                  <td class='num'>22.79%</td>
+                  <td class='num'>29.41%</td>
+                  <td class='num'>35.00%</td>
+                  <td class='num'>50.00%</td>
+                  <td class='num'>29.80%</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>summarization</h3>
+          <table>
+            <thead><tr><th>model</th><th class='num'>min</th><th class='num'>q1</th><th class='num'>median</th><th class='num'>q3</th><th class='num'>max</th><th class='num'>mean</th></tr></thead>
+            <tbody>
+                <tr>
+                  <td>bear-1</td>
+                  <td class='num'>7.69%</td>
+                  <td class='num'>17.45%</td>
+                  <td class='num'>24.73%</td>
+                  <td class='num'>33.15%</td>
+                  <td class='num'>46.98%</td>
+                  <td class='num'>25.12%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.1</td>
+                  <td class='num'>6.59%</td>
+                  <td class='num'>18.13%</td>
+                  <td class='num'>26.37%</td>
+                  <td class='num'>33.10%</td>
+                  <td class='num'>42.45%</td>
+                  <td class='num'>25.76%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.2</td>
+                  <td class='num'>8.46%</td>
+                  <td class='num'>19.87%</td>
+                  <td class='num'>26.92%</td>
+                  <td class='num'>36.62%</td>
+                  <td class='num'>50.43%</td>
+                  <td class='num'>28.07%</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>rag</h3>
+          <table>
+            <thead><tr><th>model</th><th class='num'>min</th><th class='num'>q1</th><th class='num'>median</th><th class='num'>q3</th><th class='num'>max</th><th class='num'>mean</th></tr></thead>
+            <tbody>
+                <tr>
+                  <td>bear-1</td>
+                  <td class='num'>12.98%</td>
+                  <td class='num'>21.98%</td>
+                  <td class='num'>28.30%</td>
+                  <td class='num'>29.70%</td>
+                  <td class='num'>35.38%</td>
+                  <td class='num'>25.62%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.1</td>
+                  <td class='num'>12.35%</td>
+                  <td class='num'>24.53%</td>
+                  <td class='num'>31.08%</td>
+                  <td class='num'>33.27%</td>
+                  <td class='num'>38.83%</td>
+                  <td class='num'>28.43%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.2</td>
+                  <td class='num'>15.86%</td>
+                  <td class='num'>24.96%</td>
+                  <td class='num'>31.42%</td>
+                  <td class='num'>34.65%</td>
+                  <td class='num'>40.73%</td>
+                  <td class='num'>29.86%</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>conversational</h3>
+          <table>
+            <thead><tr><th>model</th><th class='num'>min</th><th class='num'>q1</th><th class='num'>median</th><th class='num'>q3</th><th class='num'>max</th><th class='num'>mean</th></tr></thead>
+            <tbody>
+                <tr>
+                  <td>bear-1</td>
+                  <td class='num'>6.13%</td>
+                  <td class='num'>19.86%</td>
+                  <td class='num'>24.65%</td>
+                  <td class='num'>38.64%</td>
+                  <td class='num'>46.48%</td>
+                  <td class='num'>27.66%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.1</td>
+                  <td class='num'>8.51%</td>
+                  <td class='num'>19.02%</td>
+                  <td class='num'>25.81%</td>
+                  <td class='num'>43.45%</td>
+                  <td class='num'>50.76%</td>
+                  <td class='num'>29.00%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.2</td>
+                  <td class='num'>11.66%</td>
+                  <td class='num'>23.45%</td>
+                  <td class='num'>32.26%</td>
+                  <td class='num'>44.37%</td>
+                  <td class='num'>50.76%</td>
+                  <td class='num'>31.92%</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>long_context</h3>
+          <table>
+            <thead><tr><th>model</th><th class='num'>min</th><th class='num'>q1</th><th class='num'>median</th><th class='num'>q3</th><th class='num'>max</th><th class='num'>mean</th></tr></thead>
+            <tbody>
+                <tr>
+                  <td>bear-1</td>
+                  <td class='num'>19.60%</td>
+                  <td class='num'>32.52%</td>
+                  <td class='num'>45.21%</td>
+                  <td class='num'>48.65%</td>
+                  <td class='num'>53.71%</td>
+                  <td class='num'>40.12%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.1</td>
+                  <td class='num'>16.97%</td>
+                  <td class='num'>34.32%</td>
+                  <td class='num'>47.16%</td>
+                  <td class='num'>52.09%</td>
+                  <td class='num'>62.78%</td>
+                  <td class='num'>42.72%</td>
+                </tr>
+            
+                <tr>
+                  <td>bear-1.2</td>
+                  <td class='num'>21.39%</td>
+                  <td class='num'>38.74%</td>
+                  <td class='num'>49.54%</td>
+                  <td class='num'>54.23%</td>
+                  <td class='num'>62.39%</td>
+                  <td class='num'>45.28%</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        
+</section><section><h2>Latency analysis</h2>
+<p class='section-intro'>p50/p95/p99 across the sweep. E2E (compressed) = TTC compress + LLM call. E2E (baseline) = LLM call alone.</p>
+<p class='notes' style='background: #fef3c7; color: #78350f; padding: 8px 12px; border-radius: 6px;'><strong>Read these numbers carefully.</strong> E2E p95 includes (a) occasional 429-retry tail latency where TTC's 60 req/min server limit pushed individual calls into a backoff window, and (b) client-side rate-limit pacing introduced by <code>--ttc-rpm</code> (default 50/min). The steady-state per-call TTC compress latency is the <strong>TTC p50</strong> column — that's the number to compare against TTC's published benchmarks. E2E p95 is the realistic number under our free-tier quota.</p>
+
+        <div class='card'>
+          <h3>qa</h3>
+          <p class='notes'>
+            Baseline LLM-only p95: <strong>2524ms</strong>
+          </p>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC p50</th><th class='num'>TTC p95</th>
+              <th class='num'>LLM p50</th><th class='num'>LLM p95</th>
+              <th class='num'>E2E p50</th><th class='num'>E2E p95</th><th class='num'>E2E p99</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>69</td>
+                <td class='num'>78</td>
+                <td class='num'>409</td>
+                <td class='num'>709</td>
+                <td class='num'>476</td>
+                <td class='num'>780</td>
+                <td class='num'>993</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>65</td>
+                <td class='num'>72</td>
+                <td class='num'>424</td>
+                <td class='num'>990</td>
+                <td class='num'>491</td>
+                <td class='num'>1059</td>
+                <td class='num'>1093</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>67</td>
+                <td class='num'>75</td>
+                <td class='num'>471</td>
+                <td class='num'>695</td>
+                <td class='num'>536</td>
+                <td class='num'>15857</td>
+                <td class='num'>18533</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>68</td>
+                <td class='num'>88</td>
+                <td class='num'>458</td>
+                <td class='num'>996</td>
+                <td class='num'>528</td>
+                <td class='num'>1070</td>
+                <td class='num'>1256</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>68</td>
+                <td class='num'>85</td>
+                <td class='num'>420</td>
+                <td class='num'>938</td>
+                <td class='num'>493</td>
+                <td class='num'>1005</td>
+                <td class='num'>1140</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>72</td>
+                <td class='num'>183</td>
+                <td class='num'>463</td>
+                <td class='num'>18868</td>
+                <td class='num'>532</td>
+                <td class='num'>19185</td>
+                <td class='num'>52679</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>53</td>
+                <td class='num'>61</td>
+                <td class='num'>470</td>
+                <td class='num'>664</td>
+                <td class='num'>525</td>
+                <td class='num'>720</td>
+                <td class='num'>720</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>54</td>
+                <td class='num'>58</td>
+                <td class='num'>448</td>
+                <td class='num'>767</td>
+                <td class='num'>500</td>
+                <td class='num'>820</td>
+                <td class='num'>924</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>58</td>
+                <td class='num'>138</td>
+                <td class='num'>476</td>
+                <td class='num'>1258</td>
+                <td class='num'>603</td>
+                <td class='num'>9644</td>
+                <td class='num'>24395</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>65</td>
+                <td class='num'>69</td>
+                <td class='num'>407</td>
+                <td class='num'>613</td>
+                <td class='num'>511</td>
+                <td class='num'>1435</td>
+                <td class='num'>2478</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>54</td>
+                <td class='num'>88</td>
+                <td class='num'>495</td>
+                <td class='num'>3749</td>
+                <td class='num'>565</td>
+                <td class='num'>3800</td>
+                <td class='num'>7612</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>57</td>
+                <td class='num'>68</td>
+                <td class='num'>473</td>
+                <td class='num'>947</td>
+                <td class='num'>575</td>
+                <td class='num'>7575</td>
+                <td class='num'>17624</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>53</td>
+                <td class='num'>54</td>
+                <td class='num'>460</td>
+                <td class='num'>933</td>
+                <td class='num'>513</td>
+                <td class='num'>986</td>
+                <td class='num'>992</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>64</td>
+                <td class='num'>86</td>
+                <td class='num'>445</td>
+                <td class='num'>670</td>
+                <td class='num'>547</td>
+                <td class='num'>12056</td>
+                <td class='num'>18547</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>60</td>
+                <td class='num'>66</td>
+                <td class='num'>447</td>
+                <td class='num'>8742</td>
+                <td class='num'>576</td>
+                <td class='num'>9387</td>
+                <td class='num'>23767</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>summarization</h3>
+          <p class='notes'>
+            Baseline LLM-only p95: <strong>2723ms</strong>
+          </p>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC p50</th><th class='num'>TTC p95</th>
+              <th class='num'>LLM p50</th><th class='num'>LLM p95</th>
+              <th class='num'>E2E p50</th><th class='num'>E2E p95</th><th class='num'>E2E p99</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>67</td>
+                <td class='num'>74</td>
+                <td class='num'>1877</td>
+                <td class='num'>2242</td>
+                <td class='num'>1950</td>
+                <td class='num'>2309</td>
+                <td class='num'>2358</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>70</td>
+                <td class='num'>78</td>
+                <td class='num'>1994</td>
+                <td class='num'>2934</td>
+                <td class='num'>2061</td>
+                <td class='num'>3004</td>
+                <td class='num'>3135</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>69</td>
+                <td class='num'>76</td>
+                <td class='num'>1850</td>
+                <td class='num'>2757</td>
+                <td class='num'>1917</td>
+                <td class='num'>2832</td>
+                <td class='num'>2939</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>68</td>
+                <td class='num'>78</td>
+                <td class='num'>2078</td>
+                <td class='num'>2358</td>
+                <td class='num'>2147</td>
+                <td class='num'>2434</td>
+                <td class='num'>2444</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>72</td>
+                <td class='num'>76</td>
+                <td class='num'>1955</td>
+                <td class='num'>2343</td>
+                <td class='num'>2024</td>
+                <td class='num'>2418</td>
+                <td class='num'>2499</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>71</td>
+                <td class='num'>89</td>
+                <td class='num'>2186</td>
+                <td class='num'>5341</td>
+                <td class='num'>2263</td>
+                <td class='num'>5406</td>
+                <td class='num'>6723</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>67</td>
+                <td class='num'>82</td>
+                <td class='num'>2274</td>
+                <td class='num'>2570</td>
+                <td class='num'>2348</td>
+                <td class='num'>2632</td>
+                <td class='num'>2675</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>69</td>
+                <td class='num'>101</td>
+                <td class='num'>2018</td>
+                <td class='num'>2588</td>
+                <td class='num'>2086</td>
+                <td class='num'>2658</td>
+                <td class='num'>2700</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>76</td>
+                <td class='num'>91</td>
+                <td class='num'>1933</td>
+                <td class='num'>2355</td>
+                <td class='num'>2023</td>
+                <td class='num'>2429</td>
+                <td class='num'>2452</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>70</td>
+                <td class='num'>79</td>
+                <td class='num'>1816</td>
+                <td class='num'>2135</td>
+                <td class='num'>1886</td>
+                <td class='num'>2204</td>
+                <td class='num'>2258</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>69</td>
+                <td class='num'>77</td>
+                <td class='num'>2155</td>
+                <td class='num'>3955</td>
+                <td class='num'>2225</td>
+                <td class='num'>4025</td>
+                <td class='num'>4509</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>72</td>
+                <td class='num'>95</td>
+                <td class='num'>1837</td>
+                <td class='num'>2080</td>
+                <td class='num'>1906</td>
+                <td class='num'>2171</td>
+                <td class='num'>2178</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>69</td>
+                <td class='num'>145</td>
+                <td class='num'>1995</td>
+                <td class='num'>3583</td>
+                <td class='num'>2078</td>
+                <td class='num'>3718</td>
+                <td class='num'>4314</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>64</td>
+                <td class='num'>71</td>
+                <td class='num'>2037</td>
+                <td class='num'>3001</td>
+                <td class='num'>2101</td>
+                <td class='num'>3067</td>
+                <td class='num'>3192</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>68</td>
+                <td class='num'>76</td>
+                <td class='num'>1867</td>
+                <td class='num'>2116</td>
+                <td class='num'>1937</td>
+                <td class='num'>2187</td>
+                <td class='num'>2247</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>rag</h3>
+          <p class='notes'>
+            Baseline LLM-only p95: <strong>2276ms</strong>
+          </p>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC p50</th><th class='num'>TTC p95</th>
+              <th class='num'>LLM p50</th><th class='num'>LLM p95</th>
+              <th class='num'>E2E p50</th><th class='num'>E2E p95</th><th class='num'>E2E p99</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>323</td>
+                <td class='num'>368</td>
+                <td class='num'>122</td>
+                <td class='num'>128</td>
+                <td class='num'>443</td>
+                <td class='num'>494</td>
+                <td class='num'>497</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>333</td>
+                <td class='num'>371</td>
+                <td class='num'>103</td>
+                <td class='num'>118</td>
+                <td class='num'>11911</td>
+                <td class='num'>14194</td>
+                <td class='num'>14652</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>333</td>
+                <td class='num'>342</td>
+                <td class='num'>103</td>
+                <td class='num'>110</td>
+                <td class='num'>507</td>
+                <td class='num'>14179</td>
+                <td class='num'>14644</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>332</td>
+                <td class='num'>364</td>
+                <td class='num'>95</td>
+                <td class='num'>124</td>
+                <td class='num'>3621</td>
+                <td class='num'>11961</td>
+                <td class='num'>11992</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>322</td>
+                <td class='num'>377</td>
+                <td class='num'>98</td>
+                <td class='num'>102</td>
+                <td class='num'>11937</td>
+                <td class='num'>14194</td>
+                <td class='num'>14656</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>328</td>
+                <td class='num'>403</td>
+                <td class='num'>109</td>
+                <td class='num'>118</td>
+                <td class='num'>483</td>
+                <td class='num'>5129</td>
+                <td class='num'>6356</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>256</td>
+                <td class='num'>273</td>
+                <td class='num'>107</td>
+                <td class='num'>113</td>
+                <td class='num'>11922</td>
+                <td class='num'>14187</td>
+                <td class='num'>14672</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>281</td>
+                <td class='num'>316</td>
+                <td class='num'>95</td>
+                <td class='num'>106</td>
+                <td class='num'>516</td>
+                <td class='num'>14212</td>
+                <td class='num'>14668</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>356</td>
+                <td class='num'>431</td>
+                <td class='num'>97</td>
+                <td class='num'>104</td>
+                <td class='num'>3574</td>
+                <td class='num'>11950</td>
+                <td class='num'>11964</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>354</td>
+                <td class='num'>440</td>
+                <td class='num'>95</td>
+                <td class='num'>110</td>
+                <td class='num'>11932</td>
+                <td class='num'>14165</td>
+                <td class='num'>14625</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>335</td>
+                <td class='num'>346</td>
+                <td class='num'>107</td>
+                <td class='num'>120</td>
+                <td class='num'>470</td>
+                <td class='num'>5158</td>
+                <td class='num'>6398</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>348</td>
+                <td class='num'>407</td>
+                <td class='num'>100</td>
+                <td class='num'>107</td>
+                <td class='num'>11930</td>
+                <td class='num'>14167</td>
+                <td class='num'>14636</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>356</td>
+                <td class='num'>397</td>
+                <td class='num'>96</td>
+                <td class='num'>100</td>
+                <td class='num'>524</td>
+                <td class='num'>14171</td>
+                <td class='num'>14642</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>287</td>
+                <td class='num'>351</td>
+                <td class='num'>94</td>
+                <td class='num'>98</td>
+                <td class='num'>3630</td>
+                <td class='num'>11955</td>
+                <td class='num'>11978</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>272</td>
+                <td class='num'>291</td>
+                <td class='num'>95</td>
+                <td class='num'>106</td>
+                <td class='num'>11937</td>
+                <td class='num'>14167</td>
+                <td class='num'>14633</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>conversational</h3>
+          <p class='notes'>
+            Baseline LLM-only p95: <strong>3921ms</strong>
+          </p>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC p50</th><th class='num'>TTC p95</th>
+              <th class='num'>LLM p50</th><th class='num'>LLM p95</th>
+              <th class='num'>E2E p50</th><th class='num'>E2E p95</th><th class='num'>E2E p99</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>68</td>
+                <td class='num'>100</td>
+                <td class='num'>2279</td>
+                <td class='num'>2639</td>
+                <td class='num'>2281</td>
+                <td class='num'>2641</td>
+                <td class='num'>2719</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>55</td>
+                <td class='num'>77</td>
+                <td class='num'>2328</td>
+                <td class='num'>3013</td>
+                <td class='num'>2330</td>
+                <td class='num'>3015</td>
+                <td class='num'>3119</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>60</td>
+                <td class='num'>72</td>
+                <td class='num'>2114</td>
+                <td class='num'>2715</td>
+                <td class='num'>2115</td>
+                <td class='num'>2716</td>
+                <td class='num'>2841</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>58</td>
+                <td class='num'>64</td>
+                <td class='num'>2129</td>
+                <td class='num'>2364</td>
+                <td class='num'>2130</td>
+                <td class='num'>2366</td>
+                <td class='num'>2383</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>56</td>
+                <td class='num'>65</td>
+                <td class='num'>1842</td>
+                <td class='num'>2517</td>
+                <td class='num'>1844</td>
+                <td class='num'>2518</td>
+                <td class='num'>2526</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>61</td>
+                <td class='num'>69</td>
+                <td class='num'>2608</td>
+                <td class='num'>3222</td>
+                <td class='num'>2610</td>
+                <td class='num'>3224</td>
+                <td class='num'>3297</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>56</td>
+                <td class='num'>65</td>
+                <td class='num'>2314</td>
+                <td class='num'>3698</td>
+                <td class='num'>2316</td>
+                <td class='num'>3699</td>
+                <td class='num'>3770</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>61</td>
+                <td class='num'>75</td>
+                <td class='num'>2533</td>
+                <td class='num'>24574</td>
+                <td class='num'>2535</td>
+                <td class='num'>24575</td>
+                <td class='num'>30337</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>55</td>
+                <td class='num'>60</td>
+                <td class='num'>2067</td>
+                <td class='num'>3834</td>
+                <td class='num'>2069</td>
+                <td class='num'>3835</td>
+                <td class='num'>4242</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>58</td>
+                <td class='num'>66</td>
+                <td class='num'>2354</td>
+                <td class='num'>2570</td>
+                <td class='num'>2355</td>
+                <td class='num'>2572</td>
+                <td class='num'>2581</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>56</td>
+                <td class='num'>65</td>
+                <td class='num'>2744</td>
+                <td class='num'>3501</td>
+                <td class='num'>2745</td>
+                <td class='num'>3502</td>
+                <td class='num'>3630</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>53</td>
+                <td class='num'>59</td>
+                <td class='num'>2566</td>
+                <td class='num'>4175</td>
+                <td class='num'>2568</td>
+                <td class='num'>4177</td>
+                <td class='num'>4467</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>56</td>
+                <td class='num'>65</td>
+                <td class='num'>2166</td>
+                <td class='num'>3408</td>
+                <td class='num'>2168</td>
+                <td class='num'>3409</td>
+                <td class='num'>3520</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>58</td>
+                <td class='num'>67</td>
+                <td class='num'>2406</td>
+                <td class='num'>3722</td>
+                <td class='num'>2407</td>
+                <td class='num'>3723</td>
+                <td class='num'>3953</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>58</td>
+                <td class='num'>64</td>
+                <td class='num'>2205</td>
+                <td class='num'>2473</td>
+                <td class='num'>2207</td>
+                <td class='num'>2474</td>
+                <td class='num'>2513</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>long_context</h3>
+          <p class='notes'>
+            Baseline LLM-only p95: <strong>1152ms</strong>
+          </p>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC p50</th><th class='num'>TTC p95</th>
+              <th class='num'>LLM p50</th><th class='num'>LLM p95</th>
+              <th class='num'>E2E p50</th><th class='num'>E2E p95</th><th class='num'>E2E p99</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>58</td>
+                <td class='num'>60</td>
+                <td class='num'>502</td>
+                <td class='num'>620</td>
+                <td class='num'>559</td>
+                <td class='num'>680</td>
+                <td class='num'>688</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>55</td>
+                <td class='num'>61</td>
+                <td class='num'>564</td>
+                <td class='num'>782</td>
+                <td class='num'>617</td>
+                <td class='num'>840</td>
+                <td class='num'>871</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>63</td>
+                <td class='num'>70</td>
+                <td class='num'>480</td>
+                <td class='num'>632</td>
+                <td class='num'>538</td>
+                <td class='num'>702</td>
+                <td class='num'>734</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>54</td>
+                <td class='num'>64</td>
+                <td class='num'>508</td>
+                <td class='num'>1411</td>
+                <td class='num'>567</td>
+                <td class='num'>1470</td>
+                <td class='num'>1545</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>61</td>
+                <td class='num'>67</td>
+                <td class='num'>375</td>
+                <td class='num'>607</td>
+                <td class='num'>436</td>
+                <td class='num'>671</td>
+                <td class='num'>705</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>57</td>
+                <td class='num'>68</td>
+                <td class='num'>480</td>
+                <td class='num'>1019</td>
+                <td class='num'>542</td>
+                <td class='num'>1076</td>
+                <td class='num'>1214</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>61</td>
+                <td class='num'>68</td>
+                <td class='num'>507</td>
+                <td class='num'>1097</td>
+                <td class='num'>1632</td>
+                <td class='num'>2792</td>
+                <td class='num'>2841</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>60</td>
+                <td class='num'>81</td>
+                <td class='num'>539</td>
+                <td class='num'>578</td>
+                <td class='num'>2400</td>
+                <td class='num'>3677</td>
+                <td class='num'>3998</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>63</td>
+                <td class='num'>97</td>
+                <td class='num'>553</td>
+                <td class='num'>682</td>
+                <td class='num'>1354</td>
+                <td class='num'>6210</td>
+                <td class='num'>7145</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>59</td>
+                <td class='num'>114</td>
+                <td class='num'>607</td>
+                <td class='num'>2275</td>
+                <td class='num'>664</td>
+                <td class='num'>2385</td>
+                <td class='num'>2773</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>65</td>
+                <td class='num'>72</td>
+                <td class='num'>481</td>
+                <td class='num'>636</td>
+                <td class='num'>541</td>
+                <td class='num'>696</td>
+                <td class='num'>710</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>78</td>
+                <td class='num'>79</td>
+                <td class='num'>465</td>
+                <td class='num'>651</td>
+                <td class='num'>541</td>
+                <td class='num'>728</td>
+                <td class='num'>740</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>58</td>
+                <td class='num'>75</td>
+                <td class='num'>564</td>
+                <td class='num'>897</td>
+                <td class='num'>627</td>
+                <td class='num'>955</td>
+                <td class='num'>988</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>59</td>
+                <td class='num'>65</td>
+                <td class='num'>529</td>
+                <td class='num'>628</td>
+                <td class='num'>592</td>
+                <td class='num'>691</td>
+                <td class='num'>708</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>53</td>
+                <td class='num'>62</td>
+                <td class='num'>536</td>
+                <td class='num'>820</td>
+                <td class='num'>590</td>
+                <td class='num'>949</td>
+                <td class='num'>952</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+</section><section><h2>Net cost analysis</h2>
+<p class='section-intro'>Net daily cost change = downstream LLM savings − TTC bill, projected to several daily request volumes on gpt-4o-mini.</p>
+
+        <div class='card'>
+          <h3>qa</h3>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC bill / 1M req</th>
+              <th class='num'>LLM saved / 1M req</th>
+              <th class='num'>Net / 1M req/day</th>
+              <th class='num'>Net / 10M req/day</th>
+              <th class='num'>Net / 100M req/day</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.08</td>
+                <td class='num'>$3.15</td>
+                <td class='num delta-pos'>$2.07</td>
+                <td class='num delta-pos'>$20.70</td>
+                <td class='num delta-pos'>$207.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$1.65</td>
+                <td class='num'>$4.95</td>
+                <td class='num delta-pos'>$3.30</td>
+                <td class='num delta-pos'>$33.00</td>
+                <td class='num delta-pos'>$330.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$1.97</td>
+                <td class='num'>$5.85</td>
+                <td class='num delta-pos'>$3.88</td>
+                <td class='num delta-pos'>$38.80</td>
+                <td class='num delta-pos'>$388.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.07</td>
+                <td class='num'>$6.15</td>
+                <td class='num delta-pos'>$4.08</td>
+                <td class='num delta-pos'>$40.83</td>
+                <td class='num delta-pos'>$408.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.13</td>
+                <td class='num'>$6.45</td>
+                <td class='num delta-pos'>$4.32</td>
+                <td class='num delta-pos'>$43.17</td>
+                <td class='num delta-pos'>$431.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.06</td>
+                <td class='num'>$3.15</td>
+                <td class='num delta-pos'>$2.09</td>
+                <td class='num delta-pos'>$20.93</td>
+                <td class='num delta-pos'>$209.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$1.64</td>
+                <td class='num'>$4.95</td>
+                <td class='num delta-pos'>$3.31</td>
+                <td class='num delta-pos'>$33.07</td>
+                <td class='num delta-pos'>$330.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.13</td>
+                <td class='num'>$6.45</td>
+                <td class='num delta-pos'>$4.32</td>
+                <td class='num delta-pos'>$43.17</td>
+                <td class='num delta-pos'>$431.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.24</td>
+                <td class='num'>$6.75</td>
+                <td class='num delta-pos'>$4.51</td>
+                <td class='num delta-pos'>$45.07</td>
+                <td class='num delta-pos'>$450.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.35</td>
+                <td class='num'>$7.05</td>
+                <td class='num delta-pos'>$4.70</td>
+                <td class='num delta-pos'>$47.03</td>
+                <td class='num delta-pos'>$470.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.21</td>
+                <td class='num'>$3.60</td>
+                <td class='num delta-pos'>$2.39</td>
+                <td class='num delta-pos'>$23.90</td>
+                <td class='num delta-pos'>$239.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$1.81</td>
+                <td class='num'>$5.40</td>
+                <td class='num delta-pos'>$3.59</td>
+                <td class='num delta-pos'>$35.87</td>
+                <td class='num delta-pos'>$358.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.20</td>
+                <td class='num'>$6.60</td>
+                <td class='num delta-pos'>$4.40</td>
+                <td class='num delta-pos'>$43.97</td>
+                <td class='num delta-pos'>$439.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.29</td>
+                <td class='num'>$6.90</td>
+                <td class='num delta-pos'>$4.61</td>
+                <td class='num delta-pos'>$46.10</td>
+                <td class='num delta-pos'>$461.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.37</td>
+                <td class='num'>$7.05</td>
+                <td class='num delta-pos'>$4.68</td>
+                <td class='num delta-pos'>$46.77</td>
+                <td class='num delta-pos'>$467.67</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>summarization</h3>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC bill / 1M req</th>
+              <th class='num'>LLM saved / 1M req</th>
+              <th class='num'>Net / 1M req/day</th>
+              <th class='num'>Net / 10M req/day</th>
+              <th class='num'>Net / 100M req/day</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.29</td>
+                <td class='num'>$3.90</td>
+                <td class='num delta-pos'>$2.61</td>
+                <td class='num delta-pos'>$26.12</td>
+                <td class='num delta-pos'>$261.25</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$2.06</td>
+                <td class='num'>$6.30</td>
+                <td class='num delta-pos'>$4.24</td>
+                <td class='num delta-pos'>$42.38</td>
+                <td class='num delta-pos'>$423.75</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.68</td>
+                <td class='num'>$8.10</td>
+                <td class='num delta-pos'>$5.42</td>
+                <td class='num delta-pos'>$54.19</td>
+                <td class='num delta-pos'>$541.87</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.91</td>
+                <td class='num'>$8.70</td>
+                <td class='num delta-pos'>$5.79</td>
+                <td class='num delta-pos'>$57.94</td>
+                <td class='num delta-pos'>$579.37</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$3.06</td>
+                <td class='num'>$9.30</td>
+                <td class='num delta-pos'>$6.24</td>
+                <td class='num delta-pos'>$62.37</td>
+                <td class='num delta-pos'>$623.75</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.32</td>
+                <td class='num'>$4.05</td>
+                <td class='num delta-pos'>$2.73</td>
+                <td class='num delta-pos'>$27.25</td>
+                <td class='num delta-pos'>$272.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$2.02</td>
+                <td class='num'>$6.15</td>
+                <td class='num delta-pos'>$4.12</td>
+                <td class='num delta-pos'>$41.25</td>
+                <td class='num delta-pos'>$412.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.74</td>
+                <td class='num'>$8.25</td>
+                <td class='num delta-pos'>$5.51</td>
+                <td class='num delta-pos'>$55.06</td>
+                <td class='num delta-pos'>$550.62</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.99</td>
+                <td class='num'>$9.00</td>
+                <td class='num delta-pos'>$6.01</td>
+                <td class='num delta-pos'>$60.06</td>
+                <td class='num delta-pos'>$600.63</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$3.17</td>
+                <td class='num'>$9.60</td>
+                <td class='num delta-pos'>$6.43</td>
+                <td class='num delta-pos'>$64.31</td>
+                <td class='num delta-pos'>$643.13</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.60</td>
+                <td class='num'>$4.80</td>
+                <td class='num delta-pos'>$3.20</td>
+                <td class='num delta-pos'>$32.00</td>
+                <td class='num delta-pos'>$320.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$2.35</td>
+                <td class='num'>$7.05</td>
+                <td class='num delta-pos'>$4.70</td>
+                <td class='num delta-pos'>$47.00</td>
+                <td class='num delta-pos'>$470.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$3.01</td>
+                <td class='num'>$9.00</td>
+                <td class='num delta-pos'>$5.99</td>
+                <td class='num delta-pos'>$59.94</td>
+                <td class='num delta-pos'>$599.38</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$3.16</td>
+                <td class='num'>$9.45</td>
+                <td class='num delta-pos'>$6.29</td>
+                <td class='num delta-pos'>$62.94</td>
+                <td class='num delta-pos'>$629.37</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$3.29</td>
+                <td class='num'>$9.90</td>
+                <td class='num delta-pos'>$6.61</td>
+                <td class='num delta-pos'>$66.12</td>
+                <td class='num delta-pos'>$661.25</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>rag</h3>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC bill / 1M req</th>
+              <th class='num'>LLM saved / 1M req</th>
+              <th class='num'>Net / 1M req/day</th>
+              <th class='num'>Net / 10M req/day</th>
+              <th class='num'>Net / 100M req/day</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$3.69</td>
+                <td class='num'>$11.10</td>
+                <td class='num delta-pos'>$7.41</td>
+                <td class='num delta-pos'>$74.08</td>
+                <td class='num delta-pos'>$740.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$5.68</td>
+                <td class='num'>$17.10</td>
+                <td class='num delta-pos'>$11.42</td>
+                <td class='num delta-pos'>$114.17</td>
+                <td class='num delta-pos'>$1141.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$7.08</td>
+                <td class='num'>$21.30</td>
+                <td class='num delta-pos'>$14.22</td>
+                <td class='num delta-pos'>$142.17</td>
+                <td class='num delta-pos'>$1421.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$7.39</td>
+                <td class='num'>$22.20</td>
+                <td class='num delta-pos'>$14.81</td>
+                <td class='num delta-pos'>$148.08</td>
+                <td class='num delta-pos'>$1480.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$7.68</td>
+                <td class='num'>$23.10</td>
+                <td class='num delta-pos'>$15.42</td>
+                <td class='num delta-pos'>$154.17</td>
+                <td class='num delta-pos'>$1541.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$4.27</td>
+                <td class='num'>$12.75</td>
+                <td class='num delta-pos'>$8.48</td>
+                <td class='num delta-pos'>$84.83</td>
+                <td class='num delta-pos'>$848.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$6.16</td>
+                <td class='num'>$18.45</td>
+                <td class='num delta-pos'>$12.29</td>
+                <td class='num delta-pos'>$122.92</td>
+                <td class='num delta-pos'>$1229.17</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$7.85</td>
+                <td class='num'>$23.55</td>
+                <td class='num delta-pos'>$15.70</td>
+                <td class='num delta-pos'>$157.00</td>
+                <td class='num delta-pos'>$1570.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$8.15</td>
+                <td class='num'>$24.45</td>
+                <td class='num delta-pos'>$16.30</td>
+                <td class='num delta-pos'>$163.00</td>
+                <td class='num delta-pos'>$1630.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$8.52</td>
+                <td class='num'>$25.50</td>
+                <td class='num delta-pos'>$16.98</td>
+                <td class='num delta-pos'>$169.83</td>
+                <td class='num delta-pos'>$1698.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$4.60</td>
+                <td class='num'>$13.80</td>
+                <td class='num delta-pos'>$9.20</td>
+                <td class='num delta-pos'>$92.00</td>
+                <td class='num delta-pos'>$920.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$6.60</td>
+                <td class='num'>$19.80</td>
+                <td class='num delta-pos'>$13.20</td>
+                <td class='num delta-pos'>$132.00</td>
+                <td class='num delta-pos'>$1320.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$8.23</td>
+                <td class='num'>$24.75</td>
+                <td class='num delta-pos'>$16.52</td>
+                <td class='num delta-pos'>$165.17</td>
+                <td class='num delta-pos'>$1651.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$8.45</td>
+                <td class='num'>$25.35</td>
+                <td class='num delta-pos'>$16.90</td>
+                <td class='num delta-pos'>$169.00</td>
+                <td class='num delta-pos'>$1690.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$8.79</td>
+                <td class='num'>$26.40</td>
+                <td class='num delta-pos'>$17.61</td>
+                <td class='num delta-pos'>$176.08</td>
+                <td class='num delta-pos'>$1760.83</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>conversational</h3>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC bill / 1M req</th>
+              <th class='num'>LLM saved / 1M req</th>
+              <th class='num'>Net / 1M req/day</th>
+              <th class='num'>Net / 10M req/day</th>
+              <th class='num'>Net / 100M req/day</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.08</td>
+                <td class='num'>$14.85</td>
+                <td class='num delta-pos'>$13.77</td>
+                <td class='num delta-pos'>$137.67</td>
+                <td class='num delta-pos'>$1376.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$1.82</td>
+                <td class='num'>$24.75</td>
+                <td class='num delta-pos'>$22.93</td>
+                <td class='num delta-pos'>$229.33</td>
+                <td class='num delta-pos'>$2293.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.28</td>
+                <td class='num'>$31.20</td>
+                <td class='num delta-pos'>$28.92</td>
+                <td class='num delta-pos'>$289.25</td>
+                <td class='num delta-pos'>$2892.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.32</td>
+                <td class='num'>$31.80</td>
+                <td class='num delta-pos'>$29.48</td>
+                <td class='num delta-pos'>$294.83</td>
+                <td class='num delta-pos'>$2948.33</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.49</td>
+                <td class='num'>$34.20</td>
+                <td class='num delta-pos'>$31.71</td>
+                <td class='num delta-pos'>$317.08</td>
+                <td class='num delta-pos'>$3170.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.08</td>
+                <td class='num'>$14.70</td>
+                <td class='num delta-pos'>$13.62</td>
+                <td class='num delta-pos'>$136.25</td>
+                <td class='num delta-pos'>$1362.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$1.78</td>
+                <td class='num'>$24.30</td>
+                <td class='num delta-pos'>$22.52</td>
+                <td class='num delta-pos'>$225.25</td>
+                <td class='num delta-pos'>$2252.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.45</td>
+                <td class='num'>$33.45</td>
+                <td class='num delta-pos'>$31.00</td>
+                <td class='num delta-pos'>$310.00</td>
+                <td class='num delta-pos'>$3100.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.53</td>
+                <td class='num'>$34.65</td>
+                <td class='num delta-pos'>$32.12</td>
+                <td class='num delta-pos'>$321.17</td>
+                <td class='num delta-pos'>$3211.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.59</td>
+                <td class='num'>$35.55</td>
+                <td class='num delta-pos'>$32.96</td>
+                <td class='num delta-pos'>$329.58</td>
+                <td class='num delta-pos'>$3295.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$1.38</td>
+                <td class='num'>$18.75</td>
+                <td class='num delta-pos'>$17.37</td>
+                <td class='num delta-pos'>$173.75</td>
+                <td class='num delta-pos'>$1737.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$2.09</td>
+                <td class='num'>$28.65</td>
+                <td class='num delta-pos'>$26.56</td>
+                <td class='num delta-pos'>$265.58</td>
+                <td class='num delta-pos'>$2655.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$2.58</td>
+                <td class='num'>$35.40</td>
+                <td class='num delta-pos'>$32.82</td>
+                <td class='num delta-pos'>$328.25</td>
+                <td class='num delta-pos'>$3282.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$2.69</td>
+                <td class='num'>$37.05</td>
+                <td class='num delta-pos'>$34.36</td>
+                <td class='num delta-pos'>$343.58</td>
+                <td class='num delta-pos'>$3435.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$2.78</td>
+                <td class='num'>$38.40</td>
+                <td class='num delta-pos'>$35.62</td>
+                <td class='num delta-pos'>$356.17</td>
+                <td class='num delta-pos'>$3561.67</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+
+        <div class='card'>
+          <h3>long_context</h3>
+          <table>
+            <thead><tr>
+              <th>model</th><th class='num'>aggr</th>
+              <th class='num'>TTC bill / 1M req</th>
+              <th class='num'>LLM saved / 1M req</th>
+              <th class='num'>Net / 1M req/day</th>
+              <th class='num'>Net / 10M req/day</th>
+              <th class='num'>Net / 100M req/day</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$10.68</td>
+                <td class='num'>$32.10</td>
+                <td class='num delta-pos'>$21.42</td>
+                <td class='num delta-pos'>$214.17</td>
+                <td class='num delta-pos'>$2141.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$17.29</td>
+                <td class='num'>$51.90</td>
+                <td class='num delta-pos'>$34.61</td>
+                <td class='num delta-pos'>$346.08</td>
+                <td class='num delta-pos'>$3460.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$22.94</td>
+                <td class='num'>$68.85</td>
+                <td class='num delta-pos'>$45.91</td>
+                <td class='num delta-pos'>$459.08</td>
+                <td class='num delta-pos'>$4590.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$24.16</td>
+                <td class='num'>$72.45</td>
+                <td class='num delta-pos'>$48.29</td>
+                <td class='num delta-pos'>$482.92</td>
+                <td class='num delta-pos'>$4829.17</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$25.38</td>
+                <td class='num'>$76.20</td>
+                <td class='num delta-pos'>$50.82</td>
+                <td class='num delta-pos'>$508.25</td>
+                <td class='num delta-pos'>$5082.50</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$10.06</td>
+                <td class='num'>$30.15</td>
+                <td class='num delta-pos'>$20.09</td>
+                <td class='num delta-pos'>$200.92</td>
+                <td class='num delta-pos'>$2009.17</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$18.33</td>
+                <td class='num'>$55.05</td>
+                <td class='num delta-pos'>$36.72</td>
+                <td class='num delta-pos'>$367.17</td>
+                <td class='num delta-pos'>$3671.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$24.99</td>
+                <td class='num'>$75.00</td>
+                <td class='num delta-pos'>$50.01</td>
+                <td class='num delta-pos'>$500.08</td>
+                <td class='num delta-pos'>$5000.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$26.13</td>
+                <td class='num'>$78.45</td>
+                <td class='num delta-pos'>$52.32</td>
+                <td class='num delta-pos'>$523.17</td>
+                <td class='num delta-pos'>$5231.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$27.43</td>
+                <td class='num'>$82.35</td>
+                <td class='num delta-pos'>$54.92</td>
+                <td class='num delta-pos'>$549.17</td>
+                <td class='num delta-pos'>$5491.67</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>$12.39</td>
+                <td class='num'>$37.20</td>
+                <td class='num delta-pos'>$24.81</td>
+                <td class='num delta-pos'>$248.08</td>
+                <td class='num delta-pos'>$2480.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>$20.14</td>
+                <td class='num'>$60.45</td>
+                <td class='num delta-pos'>$40.31</td>
+                <td class='num delta-pos'>$403.08</td>
+                <td class='num delta-pos'>$4030.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>$25.75</td>
+                <td class='num'>$77.25</td>
+                <td class='num delta-pos'>$51.50</td>
+                <td class='num delta-pos'>$515.00</td>
+                <td class='num delta-pos'>$5150.00</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>$26.94</td>
+                <td class='num'>$80.85</td>
+                <td class='num delta-pos'>$53.91</td>
+                <td class='num delta-pos'>$539.08</td>
+                <td class='num delta-pos'>$5390.83</td>
+              </tr>
+            
+              <tr>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>$28.14</td>
+                <td class='num'>$84.45</td>
+                <td class='num delta-pos'>$56.31</td>
+                <td class='num delta-pos'>$563.08</td>
+                <td class='num delta-pos'>$5630.83</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+</section>
+<section>
+  <h2>Faithfulness vs ROUGE-L (summarization)</h2>
+  <p class='section-intro'>
+    Each dot is one sample. Top-right = high overlap and high source-grounding (good).
+    Bottom-right (red) = high ROUGE but low faithfulness — confabulation introduced by compression.
+  </p>
+  <div class='card'><svg width='520' height='380' xmlns='http://www.w3.org/2000/svg'><rect x='60' y='20' width='440' height='316' fill='white' stroke='#ccc'/><line x1='280.0' y1='20' x2='280.0' y2='336' stroke='#ddd' stroke-dasharray='4 3'/><line x1='60' y1='178.0' x2='500' y2='178.0' stroke='#ddd' stroke-dasharray='4 3'/><circle cx='239.4' cy='330.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='169.2' cy='252.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='194.9' cy='121.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='214.3' cy='334.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.7' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='179.3' cy='68.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='179.7' cy='159.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='226.8' cy='297.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='264.5' cy='334.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='169.1' cy='287.4' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='176.6' cy='159.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='199.9' cy='305.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='184.9' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='171.7' cy='115.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='206.7' cy='98.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='223.6' cy='223.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='252.9' cy='333.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='178.2' cy='260.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='178.5' cy='116.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='199.9' cy='331.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.6' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.8' cy='139.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='191.7' cy='107.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='225.7' cy='285.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='222.1' cy='333.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='180.9' cy='292.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='185.7' cy='77.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='210.5' cy='331.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='209.3' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.9' cy='119.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='182.2' cy='92.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='231.6' cy='318.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='260.8' cy='329.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='180.0' cy='285.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='165.6' cy='99.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='195.4' cy='321.4' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='203.0' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.1' cy='48.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='175.3' cy='34.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='234.9' cy='323.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='242.6' cy='274.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='168.3' cy='197.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='191.4' cy='133.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='220.5' cy='315.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='184.9' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='166.2' cy='72.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='169.2' cy='154.2' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='249.4' cy='264.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='246.5' cy='335.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='172.3' cy='264.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.1' cy='89.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='218.4' cy='317.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='188.9' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='179.1' cy='122.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='193.5' cy='46.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='223.6' cy='236.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='228.8' cy='335.2' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.6' cy='255.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.1' cy='89.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='222.1' cy='332.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='188.2' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='175.4' cy='86.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='195.4' cy='168.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='222.1' cy='311.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='232.3' cy='335.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.6' cy='292.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.1' cy='89.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='218.4' cy='329.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='195.8' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='217.9' cy='70.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='181.2' cy='97.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='220.0' cy='322.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='242.9' cy='334.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='200.8' cy='297.2' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='178.9' cy='89.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='209.5' cy='329.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='195.8' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='217.1' cy='69.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='180.5' cy='144.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='219.5' cy='322.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='245.3' cy='335.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='168.3' cy='205.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='182.4' cy='104.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='199.9' cy='327.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='188.9' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='164.4' cy='112.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='182.2' cy='103.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='223.6' cy='294.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='238.5' cy='335.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='169.2' cy='282.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='189.1' cy='89.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='199.9' cy='332.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='186.5' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='190.6' cy='78.5' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='172.3' cy='88.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='220.5' cy='310.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='226.8' cy='335.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='177.3' cy='265.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='176.9' cy='103.4' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='197.1' cy='308.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='198.9' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='177.8' cy='140.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='172.3' cy='30.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='226.5' cy='322.6' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='229.2' cy='335.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='176.5' cy='301.4' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='172.2' cy='103.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='192.8' cy='323.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='208.6' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='182.8' cy='142.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='171.5' cy='153.3' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='219.5' cy='322.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='229.2' cy='335.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='193.8' cy='298.0' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='172.2' cy='103.1' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='205.7' cy='304.4' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='195.8' cy='335.9' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='191.7' cy='141.7' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='169.2' cy='107.8' r='4' fill='#2563eb' fill-opacity='0.6'/><circle cx='217.4' cy='325.0' r='4' fill='#2563eb' fill-opacity='0.6'/><text x='60.0' y='352' text-anchor='middle' font-size='11' fill='#666'>0.00</text><text x='54' y='340.0' text-anchor='end' font-size='11' fill='#666'>0.00</text><text x='170.0' y='352' text-anchor='middle' font-size='11' fill='#666'>0.25</text><text x='54' y='261.0' text-anchor='end' font-size='11' fill='#666'>0.25</text><text x='280.0' y='352' text-anchor='middle' font-size='11' fill='#666'>0.50</text><text x='54' y='182.0' text-anchor='end' font-size='11' fill='#666'>0.50</text><text x='390.0' y='352' text-anchor='middle' font-size='11' fill='#666'>0.75</text><text x='54' y='103.0' text-anchor='end' font-size='11' fill='#666'>0.75</text><text x='500.0' y='352' text-anchor='middle' font-size='11' fill='#666'>1.00</text><text x='54' y='24.0' text-anchor='end' font-size='11' fill='#666'>1.00</text><text x='280.0' y='376' text-anchor='middle' font-size='12' fill='#333'>ROUGE-L</text><text x='14' y='178.0' transform='rotate(-90 14 178.0)' text-anchor='middle' font-size='12' fill='#333'>faithfulness</text></svg></div>
+</section>
+<section><h2>Long-context heatmap — needle position × aggressiveness</h2>
+<p class='section-intro'>Color = retrieval accuracy. Darker green = needle still recovered after compression. The strongest visual argument for the product.</p>
+<div class='card'><h3>bear-1</h3><svg width='420' height='190' xmlns='http://www.w3.org/2000/svg'><text x='92' y='54.0' text-anchor='end' font-size='12' fill='#333'>start</text><rect x='100' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='94.0' text-anchor='end' font-size='12' fill='#333'>middle</text><rect x='100' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='134.0' text-anchor='end' font-size='12' fill='#333'>end</text><rect x='100' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='130.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.10</text><text x='190.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.30</text><text x='250.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.50</text><text x='310.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.70</text><text x='370.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.90</text></svg></div>
+<div class='card'><h3>bear-1.1</h3><svg width='420' height='190' xmlns='http://www.w3.org/2000/svg'><text x='92' y='54.0' text-anchor='end' font-size='12' fill='#333'>start</text><rect x='100' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='94.0' text-anchor='end' font-size='12' fill='#333'>middle</text><rect x='100' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='134.0' text-anchor='end' font-size='12' fill='#333'>end</text><rect x='100' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='130.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.10</text><text x='190.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.30</text><text x='250.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.50</text><text x='310.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.70</text><text x='370.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.90</text></svg></div>
+<div class='card'><h3>bear-1.2</h3><svg width='420' height='190' xmlns='http://www.w3.org/2000/svg'><text x='92' y='54.0' text-anchor='end' font-size='12' fill='#333'>start</text><rect x='100' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='30' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='54.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='94.0' text-anchor='end' font-size='12' fill='#333'>middle</text><rect x='100' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='70' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='94.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='92' y='134.0' text-anchor='end' font-size='12' fill='#333'>end</text><rect x='100' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='130.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='160' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='190.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='220' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='250.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='280' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='310.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><rect x='340' y='110' width='60' height='40' fill='hsl(140, 60%, 35%)' stroke='#ddd'/><text x='370.0' y='134.0' text-anchor='middle' font-size='12' fill='#333'>1.00</text><text x='130.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.10</text><text x='190.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.30</text><text x='250.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.50</text><text x='310.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.70</text><text x='370.0' y='22' text-anchor='middle' font-size='12' fill='#333'>0.90</text></svg></div>
+</section><section><h2>Full results</h2>
+<p class='section-intro'>One row per (task × model × aggressiveness) cell.</p>
+<div class='card'><table><thead><tr>
+<th>task</th><th>model</th><th class='num'>aggr</th>
+<th class='num'>primary metric</th><th class='num'>Δ vs baseline</th>
+<th class='num'>compression</th><th class='num'>TTC cost</th>
+<th class='num'>p95 E2E (ms)</th><th class='num'>fail %</th>
+</tr></thead><tbody>
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.883</td>
+                <td class='num delta-pos'>+1.67pp</td>
+                <td class='num'>16.3%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>780</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.889</td>
+                <td class='num delta-pos'>+2.22pp</td>
+                <td class='num'>25.0%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>1059</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>29.8%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>15857</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>31.3%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>1070</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>32.3%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>1005</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.883</td>
+                <td class='num delta-pos'>+1.67pp</td>
+                <td class='num'>16.0%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>19185</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.886</td>
+                <td class='num delta-pos'>+1.90pp</td>
+                <td class='num'>24.7%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>720</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.911</td>
+                <td class='num delta-pos'>+4.44pp</td>
+                <td class='num'>32.1%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>820</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.844</td>
+                <td class='num delta-neg'>-2.22pp</td>
+                <td class='num'>33.7%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>9644</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.844</td>
+                <td class='num delta-neg'>-2.22pp</td>
+                <td class='num'>35.3%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>1435</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.886</td>
+                <td class='num delta-pos'>+1.90pp</td>
+                <td class='num'>18.3%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>3800</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.908</td>
+                <td class='num delta-pos'>+4.13pp</td>
+                <td class='num'>27.4%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>7575</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>33.1%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>986</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>34.4%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>12056</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>qa</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.956</td>
+                <td class='num delta-pos'>+8.89pp</td>
+                <td class='num'>35.7%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>9387</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.316</td>
+                <td class='num delta-pos'>+0.35pp</td>
+                <td class='num'>13.4%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>2309</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.317</td>
+                <td class='num delta-pos'>+0.45pp</td>
+                <td class='num'>21.5%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>3004</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.320</td>
+                <td class='num delta-pos'>+0.74pp</td>
+                <td class='num'>28.0%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2832</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.322</td>
+                <td class='num delta-pos'>+0.92pp</td>
+                <td class='num'>30.5%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2434</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.320</td>
+                <td class='num delta-pos'>+0.68pp</td>
+                <td class='num'>32.2%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2418</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.316</td>
+                <td class='num delta-pos'>+0.33pp</td>
+                <td class='num'>13.9%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>5406</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.321</td>
+                <td class='num delta-pos'>+0.86pp</td>
+                <td class='num'>21.1%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>2632</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.321</td>
+                <td class='num delta-pos'>+0.87pp</td>
+                <td class='num'>28.7%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2658</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.331</td>
+                <td class='num delta-pos'>+1.83pp</td>
+                <td class='num'>31.6%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2429</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.331</td>
+                <td class='num delta-pos'>+1.82pp</td>
+                <td class='num'>33.5%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2204</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.305</td>
+                <td class='num delta-neg'>-0.74pp</td>
+                <td class='num'>16.7%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>4025</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.309</td>
+                <td class='num delta-neg'>-0.41pp</td>
+                <td class='num'>24.5%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>2171</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.305</td>
+                <td class='num delta-neg'>-0.78pp</td>
+                <td class='num'>31.4%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>3718</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.305</td>
+                <td class='num delta-neg'>-0.79pp</td>
+                <td class='num'>33.1%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>3067</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>summarization</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.311</td>
+                <td class='num delta-neg'>-0.17pp</td>
+                <td class='num'>34.6%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2187</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>15.0%</td>
+                <td class='num'>$0.000004</td>
+                <td class='num'>494</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>23.1%</td>
+                <td class='num'>$0.000006</td>
+                <td class='num'>14194</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>28.8%</td>
+                <td class='num'>$0.000007</td>
+                <td class='num'>14179</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>30.0%</td>
+                <td class='num'>$0.000007</td>
+                <td class='num'>11961</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>31.2%</td>
+                <td class='num'>$0.000008</td>
+                <td class='num'>14194</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>17.4%</td>
+                <td class='num'>$0.000004</td>
+                <td class='num'>5129</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>25.1%</td>
+                <td class='num'>$0.000006</td>
+                <td class='num'>14187</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>31.9%</td>
+                <td class='num'>$0.000008</td>
+                <td class='num'>14212</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>33.2%</td>
+                <td class='num'>$0.000008</td>
+                <td class='num'>11950</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>34.6%</td>
+                <td class='num'>$0.000009</td>
+                <td class='num'>14165</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>18.7%</td>
+                <td class='num'>$0.000005</td>
+                <td class='num'>5158</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>26.9%</td>
+                <td class='num'>$0.000007</td>
+                <td class='num'>14167</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>33.5%</td>
+                <td class='num'>$0.000008</td>
+                <td class='num'>14171</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>34.4%</td>
+                <td class='num'>$0.000008</td>
+                <td class='num'>11955</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>rag</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>35.8%</td>
+                <td class='num'>$0.000009</td>
+                <td class='num'>14167</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.921</td>
+                <td class='num delta-neg'>-4.61pp</td>
+                <td class='num'>15.0%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>2641</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.920</td>
+                <td class='num delta-neg'>-4.69pp</td>
+                <td class='num'>25.2%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>3015</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.856</td>
+                <td class='num delta-neg'>-11.13pp</td>
+                <td class='num'>31.5%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>2716</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.816</td>
+                <td class='num delta-neg'>-15.12pp</td>
+                <td class='num'>32.0%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>2366</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.816</td>
+                <td class='num delta-neg'>-15.12pp</td>
+                <td class='num'>34.5%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>2518</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.949</td>
+                <td class='num delta-neg'>-1.75pp</td>
+                <td class='num'>14.9%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>3224</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.888</td>
+                <td class='num delta-neg'>-7.84pp</td>
+                <td class='num'>24.7%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>3699</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.844</td>
+                <td class='num delta-neg'>-12.31pp</td>
+                <td class='num'>34.2%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>24575</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.825</td>
+                <td class='num delta-neg'>-14.16pp</td>
+                <td class='num'>35.2%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>3835</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.815</td>
+                <td class='num delta-neg'>-15.16pp</td>
+                <td class='num'>36.0%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2572</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>0.911</td>
+                <td class='num delta-neg'>-5.56pp</td>
+                <td class='num'>19.1%</td>
+                <td class='num'>$0.000001</td>
+                <td class='num'>3502</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>0.892</td>
+                <td class='num delta-neg'>-7.49pp</td>
+                <td class='num'>29.0%</td>
+                <td class='num'>$0.000002</td>
+                <td class='num'>4177</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>0.844</td>
+                <td class='num delta-neg'>-12.31pp</td>
+                <td class='num'>35.7%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>3409</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>0.821</td>
+                <td class='num delta-neg'>-14.58pp</td>
+                <td class='num'>37.3%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>3723</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>conversational</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>0.815</td>
+                <td class='num delta-neg'>-15.21pp</td>
+                <td class='num'>38.5%</td>
+                <td class='num'>$0.000003</td>
+                <td class='num'>2474</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>21.3%</td>
+                <td class='num'>$0.000011</td>
+                <td class='num'>680</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>34.5%</td>
+                <td class='num'>$0.000017</td>
+                <td class='num'>840</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>45.8%</td>
+                <td class='num'>$0.000023</td>
+                <td class='num'>702</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>48.2%</td>
+                <td class='num'>$0.000024</td>
+                <td class='num'>1470</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>50.7%</td>
+                <td class='num'>$0.000025</td>
+                <td class='num'>671</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>20.1%</td>
+                <td class='num'>$0.000010</td>
+                <td class='num'>1076</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>36.6%</td>
+                <td class='num'>$0.000018</td>
+                <td class='num'>2792</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>49.9%</td>
+                <td class='num'>$0.000025</td>
+                <td class='num'>3677</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>52.2%</td>
+                <td class='num'>$0.000026</td>
+                <td class='num'>6210</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.1</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>54.8%</td>
+                <td class='num'>$0.000027</td>
+                <td class='num'>2385</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.10</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>24.7%</td>
+                <td class='num'>$0.000012</td>
+                <td class='num'>696</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.30</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>40.2%</td>
+                <td class='num'>$0.000020</td>
+                <td class='num'>728</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.50</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>51.4%</td>
+                <td class='num'>$0.000026</td>
+                <td class='num'>955</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.70</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>53.8%</td>
+                <td class='num'>$0.000027</td>
+                <td class='num'>691</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+
+              <tr>
+                <td>long_context</td>
+                <td>bear-1.2</td>
+                <td class='num'>0.90</td>
+                <td class='num'>1.000</td>
+                <td class='num delta-zero'>+0.00pp</td>
+                <td class='num'>56.2%</td>
+                <td class='num'>$0.000028</td>
+                <td class='num'>949</td>
+                <td class='num'>0%</td>
+              </tr>
+            
+</tbody></table></div></section>
+<footer style='margin-top: 48px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 12px;'>
+  <p>
+    run_id: 20260426T232228Z ·
+    backend: openai (gpt-4o-mini) ·
+    duration: 1634.6s ·
+    samples: 50 ·
+    seed: 42 ·
+    embeddings: yes
+  </p>
+  <p>
+    Idempotence pre-check: executed, matched=True
+  </p>
+</footer>
+
+</body>
+</html>

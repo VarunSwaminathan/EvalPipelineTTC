@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_DATASET = Path(__file__).resolve().parent.parent.parent / "datasets" / "qa_samples.json"
 
-PROTECTED_SUBSET_FRACTION = 0.2
+PROTECTED_SUBSET_FRACTION = 1.0
 
 PRIMARY_METRIC = "f1"
 

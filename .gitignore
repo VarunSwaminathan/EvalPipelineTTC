@@ -28,10 +28,16 @@ env/
 .env.*
 !.env.example
 
-# Eval outputs (regenerable)
-results/
+# Eval outputs (regenerable). Use results/* (not results/) so the
+# !-exceptions below can re-include specific files — git can't un-ignore
+# files inside a fully-ignored directory.
+results/*
 *.html
 !report_template.html
+# Exception: the canonical sample run is committed so reviewers can open
+# the report without running the eval.
+!results/sample_run.html
+!results/sample_run.json
 
 # Local model caches (sentence-transformers etc.)
 .cache/

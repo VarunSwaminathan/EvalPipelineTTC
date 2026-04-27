@@ -1,0 +1,30 @@
+[project]
+name = "ttc-eval"
+version = "0.1.0"
+description = "Evaluation pipeline for The Token Company's input-compression API (bear-1.x family)"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["results", ".venv", "venv"]
+
+[tool.ruff.lint]
+# A pragmatic set: pycodestyle, pyflakes, isort, bugbear, simplify, pyupgrade, comprehensions.
+select = ["E", "F", "I", "B", "SIM", "UP", "C4"]
+ignore = [
+    "E501",  # line length is enforced by formatter, not lint
+    "B008",  # function calls in defaults are fine for Pydantic-style configs
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]  # asserts in tests are fine
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

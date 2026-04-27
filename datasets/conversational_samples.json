@@ -1,0 +1,66 @@
+[
+  {
+    "id": "conv-001",
+    "passage": "Aurora Therapeutics announced positive top-line results from its phase 2b trial of avlumetinib, an oral selective kinase inhibitor under development for moderate-to-severe atopic dermatitis. The trial enrolled 412 adult patients across 38 sites in North America and Europe, randomized to one of two doses of avlumetinib or placebo for sixteen weeks. The primary endpoint, the proportion of patients achieving at least a 75 percent improvement on the Eczema Area and Severity Index at week sixteen, was met with statistical significance for both dose arms relative to placebo. Safety findings were broadly consistent with the prior phase 2a study; the most common adverse events were headache, nasopharyngitis, and mild gastrointestinal symptoms. The company plans to initiate a phase 3 program in the first half of next year.",
+    "turns": [
+      {"question": "What disease was the trial studying?", "answer": "atopic dermatitis"},
+      {"question": "How many patients were enrolled?", "answer": "412"},
+      {"question": "What was the primary endpoint?", "answer": "the proportion of patients achieving at least a 75 percent improvement on the Eczema Area and Severity Index at week 16"},
+      {"question": "Was it met?", "answer": "yes"},
+      {"question": "When does the company plan to start phase 3?", "answer": "the first half of next year"}
+    ]
+  },
+  {
+    "id": "conv-002",
+    "passage": "The city council voted Tuesday night to approve the long-debated Riverside Greenway project. The project will convert a 2.4-mile stretch of underused industrial frontage along the river into a mixed-use park, with walking and biking paths, native-plant restoration zones, several small public-art installations, and three community-event spaces. The total cost of the project is estimated at $48 million, of which $32 million has been secured from a combination of state-level grants and private philanthropic contributions; the remaining $16 million will be funded through a municipal bond issue scheduled to go to voters next March. Construction is expected to begin in late summer next year and is scheduled to be completed in three phases over approximately five years.",
+    "turns": [
+      {"question": "What did the council approve?", "answer": "the Riverside Greenway project"},
+      {"question": "How long is the stretch?", "answer": "2.4 miles"},
+      {"question": "What is the total cost?", "answer": "$48 million"},
+      {"question": "How much has been secured already?", "answer": "$32 million"},
+      {"question": "When is construction expected to start?", "answer": "late summer next year"}
+    ]
+  },
+  {
+    "id": "conv-003",
+    "passage": "Dr. Marcus Chen, a research professor in the Department of Materials Science, leads a group studying solid-state electrolytes for next-generation lithium batteries. The group's recent work, published in a leading materials journal, reports a sulfide-based electrolyte composition with room-temperature ionic conductivity comparable to liquid electrolytes, while remaining stable in contact with lithium metal anodes. The group's collaborators at a national laboratory have demonstrated single-layer cells with this electrolyte achieving more than 1,000 charge-discharge cycles at modest current density without significant capacity fade. Chen joined the faculty in 2014 after a postdoctoral fellowship at a major Asian institute. He is the author of more than 90 peer-reviewed papers and holds eleven patents.",
+    "turns": [
+      {"question": "Who leads the research group?", "answer": "Dr. Marcus Chen"},
+      {"question": "What does the group study?", "answer": "solid-state electrolytes for next-generation lithium batteries"},
+      {"question": "What kind of electrolyte did they report?", "answer": "a sulfide-based electrolyte"},
+      {"question": "How many cycles did the test cells achieve?", "answer": "more than 1,000"},
+      {"question": "When did he join the faculty?", "answer": "2014"}
+    ]
+  },
+  {
+    "id": "conv-004",
+    "passage": "Helena Park is a financial journalist who has been covering technology mergers and acquisitions for the past twelve years. She joined the Tribune in 2018 after stints at two other major publications. Earlier this year she broke the story of the failed acquisition talks between two major cloud-infrastructure companies, a scoop that was followed and credited by every major business outlet within hours. Her reporting has earned her two industry awards and a fellowship at a prominent journalism school. Outside of her core M&A beat, she has written extensively about the challenges of regulatory review for large technology transactions, the changing role of activist investors, and the underappreciated dynamics of venture-secondary markets.",
+    "turns": [
+      {"question": "What does Helena cover?", "answer": "technology mergers and acquisitions"},
+      {"question": "How long has she been on this beat?", "answer": "twelve years"},
+      {"question": "Where does she currently work?", "answer": "the Tribune"},
+      {"question": "What story did she break this year?", "answer": "the failed acquisition talks between two major cloud-infrastructure companies"}
+    ]
+  },
+  {
+    "id": "conv-005",
+    "passage": "The novel Pale Constellations, published in 2019, is the third book by author Iris Verhaegen and her first to win a major literary prize. The novel is set in a small coastal town in northern Europe and follows three generations of a single family across roughly fifty years of post-war history. The book was widely praised for its careful prose, its restraint in handling potentially melodramatic material, and the structural inventiveness of its non-linear narrative, which moves freely among the perspectives of seven distinct family members. Verhaegen has said in interviews that the novel was inspired in part by family stories handed down from her grandparents, although she has been careful to insist that the work is fundamentally fictional.",
+    "turns": [
+      {"question": "Who wrote Pale Constellations?", "answer": "Iris Verhaegen"},
+      {"question": "When was it published?", "answer": "2019"},
+      {"question": "How many family members are perspectives in the novel?", "answer": "seven"},
+      {"question": "What inspired her to write it?", "answer": "family stories handed down from her grandparents"}
+    ]
+  },
+  {
+    "id": "conv-006",
+    "passage": "Halberd Logistics' new automated sortation facility in Phoenix, which opened earlier this year, represents the company's largest single capital project in the past decade. The facility uses an integrated combination of robotic shuttles, conveyor systems, and machine-vision-based parcel inspection to handle up to 240,000 packages per hour at full operating capacity. Total project cost was approximately $620 million, of which roughly $90 million was for the building shell and the remainder was for material-handling equipment and software. The facility employs 1,400 people across three shifts and is expected to reduce per-package handling cost by approximately 14 percent relative to the legacy facility it replaces. Halberd's executive team has signaled that two additional facilities of similar scale are in early planning.",
+    "turns": [
+      {"question": "Where is the new facility located?", "answer": "Phoenix"},
+      {"question": "How many packages per hour can it handle?", "answer": "240,000"},
+      {"question": "What was the total cost?", "answer": "approximately $620 million"},
+      {"question": "How many people does it employ?", "answer": "1,400"},
+      {"question": "How many additional facilities are being planned?", "answer": "two"}
+    ]
+  }
+]

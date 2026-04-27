@@ -1,0 +1,107 @@
+[
+  {
+    "id": "fin-001",
+    "domain": "finance",
+    "context": "In its annual report for fiscal year 2023, Acme Industries reported total net revenue of $12.4 billion, an increase of 8.2 percent year-over-year, driven primarily by strong demand in the industrial automation segment, which grew 14 percent. The company noted that gross margin contracted modestly to 38.1 percent from 39.4 percent in the prior year, reflecting elevated input costs and ongoing supply-chain headwinds that management characterized as transitory. Operating income came in at $2.1 billion, with management reaffirming its commitment to returning capital to shareholders through both dividends and the previously announced $1.5 billion share repurchase authorization. The company ended the year with $3.8 billion in cash and short-term investments and $5.2 billion in long-term debt.",
+    "question": "What was Acme Industries' total net revenue in fiscal year 2023?",
+    "answer": "$12.4 billion"
+  },
+  {
+    "id": "fin-002",
+    "domain": "finance",
+    "context": "Northstar Bank's quarterly earnings call covered a number of topics, including the impact of recent interest-rate movements on net interest margin. The CFO commented at length on the bank's strategy for managing duration risk in its securities portfolio, noting that the bank had elected to extend duration modestly during the quarter to lock in higher yields. Net interest income for the quarter was $1.85 billion, up from $1.71 billion in the prior-year quarter. The provision for credit losses was $310 million, slightly above analyst expectations, reflecting what management described as 'a measured response to a normalizing credit environment rather than any deterioration in the underlying portfolio.' Tier 1 capital ratio stood at 12.4 percent at quarter-end.",
+    "question": "What was Northstar Bank's net interest income for the quarter?",
+    "answer": "$1.85 billion"
+  },
+  {
+    "id": "fin-003",
+    "domain": "finance",
+    "context": "The 10-K disclosed that Vintage Software's research and development expense for fiscal 2024 was $890 million, representing 22 percent of total revenue, up from 19 percent in fiscal 2023. Management attributed the increase to expanded headcount in the AI infrastructure team, ongoing investment in their cloud-native platform rebuild, and the inclusion of a full year of expense from the Helix acquisition completed in the second quarter of fiscal 2023. The company employs roughly 11,200 people across 23 countries, with engineering concentrated in the United States, Ireland, and India. Revenue from the cloud subscription segment grew 31 percent to $2.1 billion.",
+    "question": "What percentage of total revenue did Vintage Software's R&D expense represent in fiscal 2024?",
+    "answer": "22 percent"
+  },
+  {
+    "id": "fin-004",
+    "domain": "finance",
+    "context": "Halberd Logistics reported full-year free cash flow of $740 million, a meaningful improvement from $510 million in the prior year. The improvement was driven by working-capital efficiency initiatives, lower capital expenditure intensity following the completion of the Phoenix and Memphis distribution hubs, and stronger operating performance in the international parcel segment. The company returned $400 million to shareholders through dividends during the year and repurchased $250 million of common stock. Management reiterated its medium-term target of 8 to 10 percent annual free-cash-flow growth.",
+    "question": "How much did Halberd Logistics return to shareholders through dividends during the year?",
+    "answer": "$400 million"
+  },
+  {
+    "id": "fin-005",
+    "domain": "finance",
+    "context": "During the earnings call, Brightline Energy's CEO discussed the company's renewable-generation pipeline at length, emphasizing that the company expects to bring 2.4 gigawatts of new solar capacity online during calendar year 2025 across projects in Texas, Arizona, and Nevada. The CFO added that the projects, taken together, are expected to contribute approximately $180 million in incremental EBITDA on an annualized basis once fully ramped. Total company EBITDA for the most recent fiscal year was $3.2 billion. The company reaffirmed its dividend policy and expressed confidence in its investment-grade credit rating, which had recently been affirmed by both major rating agencies.",
+    "question": "How much new solar capacity does Brightline Energy expect to bring online in 2025?",
+    "answer": "2.4 gigawatts"
+  },
+  {
+    "id": "sci-001",
+    "domain": "science",
+    "context": "The CRISPR-Cas9 system, originally identified as a component of the adaptive immune system in bacteria, has revolutionized molecular biology over the past decade. The system functions by using a guide RNA molecule to direct the Cas9 endonuclease to a specific DNA sequence, where it generates a double-strand break. This break is then repaired by one of the cell's intrinsic DNA repair mechanisms, either non-homologous end joining, which is error-prone and frequently introduces small insertions or deletions, or homology-directed repair, which can be used to introduce a precise edit when a template is supplied. The technology was awarded the Nobel Prize in Chemistry in 2020.",
+    "question": "What enzyme does the CRISPR system use to cut DNA?",
+    "answer": "Cas9"
+  },
+  {
+    "id": "sci-002",
+    "domain": "science",
+    "context": "Photosynthesis in higher plants occurs primarily in the chloroplasts of leaf mesophyll cells. The process is conventionally divided into two stages. The light-dependent reactions take place in the thylakoid membrane and use absorbed light energy to drive the splitting of water molecules and the production of ATP and NADPH. The light-independent reactions, also called the Calvin cycle, occur in the stroma and use the ATP and NADPH generated in the first stage to fix carbon dioxide into three-carbon sugar molecules. The overall efficiency of photosynthesis in converting incident solar energy to chemical energy is typically in the range of 3 to 6 percent under field conditions.",
+    "question": "Where in the chloroplast does the Calvin cycle occur?",
+    "answer": "the stroma"
+  },
+  {
+    "id": "hist-001",
+    "domain": "history",
+    "context": "The signing of the Magna Carta in 1215 at Runnymede, on the bank of the River Thames near Windsor, is often cited as a foundational moment in the development of constitutional government in the English-speaking world. The document was negotiated between King John of England and a group of rebellious barons who had become exasperated with what they viewed as arbitrary royal taxation and the heavy-handed administration of justice. While the original 1215 charter was annulled by Pope Innocent III within months, the document was reissued in revised form several times during the thirteenth century, and certain of its provisions, particularly those concerning due process, came to exert lasting influence on later legal traditions.",
+    "question": "Where was the Magna Carta signed?",
+    "answer": "Runnymede"
+  },
+  {
+    "id": "hist-002",
+    "domain": "history",
+    "context": "The Apollo 11 mission, which culminated in the first crewed lunar landing, was launched on July 16, 1969 from Kennedy Space Center in Florida. The crew consisted of mission commander Neil Armstrong, command module pilot Michael Collins, and lunar module pilot Buzz Aldrin. While Collins remained in lunar orbit aboard the command module Columbia, Armstrong and Aldrin descended to the lunar surface in the lunar module Eagle on July 20, touching down in the Sea of Tranquility. Armstrong became the first human to walk on the Moon, with Aldrin following approximately twenty minutes later. The mission returned to Earth on July 24, 1969, with the crew splashing down in the Pacific Ocean.",
+    "question": "Who was the command module pilot of Apollo 11?",
+    "answer": "Michael Collins"
+  },
+  {
+    "id": "med-001",
+    "domain": "medicine",
+    "context": "Acetaminophen, also known as paracetamol in many countries, is one of the most widely used analgesic and antipyretic medications worldwide. Although its precise mechanism of action remains incompletely understood, current evidence suggests that it acts predominantly within the central nervous system, possibly through modulation of cyclooxygenase activity in the brain and spinal cord, in contrast to the peripheral anti-inflammatory action of nonsteroidal anti-inflammatory drugs such as ibuprofen. Acetaminophen is generally well tolerated at recommended doses, but overdose can result in severe and potentially fatal hepatotoxicity due to the formation of a reactive metabolite that depletes hepatic glutathione stores.",
+    "question": "What organ is most at risk in acetaminophen overdose?",
+    "answer": "the liver"
+  },
+  {
+    "id": "law-001",
+    "domain": "law",
+    "context": "The Fourth Amendment to the United States Constitution protects against unreasonable searches and seizures and generally requires that warrants be supported by probable cause and describe with particularity the places to be searched and the things to be seized. Over the course of the twentieth century, the Supreme Court developed a substantial body of doctrine elaborating on the scope of these protections, including the exclusionary rule, established in Mapp v. Ohio in 1961, which generally prohibits the use of evidence obtained in violation of the Fourth Amendment in criminal trials. The Court has also recognized a number of exceptions to the warrant requirement, including searches incident to a lawful arrest and exigent circumstances.",
+    "question": "In what year was the exclusionary rule extended to state courts in Mapp v. Ohio?",
+    "answer": "1961"
+  },
+  {
+    "id": "tech-001",
+    "domain": "technology",
+    "context": "The Transformer architecture, introduced in the 2017 paper 'Attention Is All You Need' by Vaswani and colleagues at Google Brain, replaced the recurrent connections that had previously dominated sequence modeling with a mechanism based entirely on self-attention. This architectural choice allowed for substantially greater parallelism during training and made it tractable to train models on much larger datasets than had previously been feasible. The original Transformer was demonstrated on machine translation tasks, but the architecture has since become the foundation for nearly all state-of-the-art large language models, including the GPT and BERT families.",
+    "question": "What architecture replaced recurrent connections with self-attention?",
+    "answer": "the Transformer"
+  },
+  {
+    "id": "tech-002",
+    "domain": "technology",
+    "context": "TCP, the Transmission Control Protocol, provides a reliable, ordered, byte-stream service over the inherently unreliable Internet Protocol. To achieve this, TCP employs a combination of mechanisms including sequence numbers to enable in-order delivery, cumulative acknowledgments, retransmission on timeout, sliding-window flow control to prevent overwhelming a slow receiver, and congestion-control algorithms such as TCP Reno or CUBIC to avoid congestive collapse of the network. Connection establishment uses a three-way handshake involving SYN, SYN-ACK, and ACK packets, and connection termination uses a similar but four-step procedure to permit graceful close in either direction.",
+    "question": "How many packets are involved in TCP's connection-establishment handshake?",
+    "answer": "three"
+  },
+  {
+    "id": "sci-003",
+    "domain": "science",
+    "context": "The Standard Model of particle physics, refined over the second half of the twentieth century, organizes the known fundamental constituents of matter into three generations of quarks and leptons, together with the gauge bosons that mediate the electromagnetic, weak, and strong forces, and the Higgs boson, which is associated with the mechanism by which other particles acquire mass. The existence of the Higgs boson was confirmed experimentally in 2012 at the Large Hadron Collider at CERN, completing the experimental verification of the Standard Model's particle content. Despite this success, the Standard Model is widely understood to be incomplete, as it does not account for gravity, dark matter, or neutrino masses.",
+    "question": "In what year was the Higgs boson confirmed experimentally?",
+    "answer": "2012"
+  },
+  {
+    "id": "fin-006",
+    "domain": "finance",
+    "context": "Quintile Healthcare's investor day presentation outlined a five-year strategic plan emphasizing margin expansion through procurement consolidation, footprint optimization across its outpatient surgical centers, and digital-first patient engagement. Management guided to a long-term operating margin target of 18 to 20 percent, up from the most recently reported 14.7 percent. The company also announced a refreshed capital-allocation framework: at least 40 percent of free cash flow will be returned to shareholders, with the remainder split between bolt-on M&A and reinvestment in technology infrastructure.",
+    "question": "What is Quintile Healthcare's long-term operating margin target?",
+    "answer": "18 to 20 percent"
+  }
+]
